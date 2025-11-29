@@ -113,15 +113,15 @@ font-family: 'Rajdhani', sans-serif;
     padding-left: 8px; } }
 
 /* ----------------------------------------------------
-    Normalize    0B2C3D
+    Normalize    3E4095
 ---------------------------------------------------- */
 :root {
-  --ltn__primary-color: #0B2C3D;
+  --ltn__primary-color: #3E4095;
   --ltn__primary-color-2: #141414;
   /* Darken */
   --ltn__primary-color-3: #133236;
   /* Lighten */
-  --ltn__secondary-color: #18690B;
+  --ltn__secondary-color: #F58634;
   --ltn__secondary-color-2: #cb3421;
   /* Darken */
   --ltn__secondary-color-3: #fb412a;
@@ -153,7 +153,7 @@ font-family: 'Rajdhani', sans-serif;
   /* Black */
   --section-bg-5: #FFF2F0;
   /* White */
-  --section-bg-6: #0B2C3D;
+  --section-bg-6: #3E4095;
   /* Black */
   --section-bg-7: #282b38;
   /* Black */

@@ -60,7 +60,7 @@
                                 <li>
                                     <!-- header-top-btn -->
                                     <div class="header-top-btn">
-                                        <a href="https://ejournal.uinbukittinggi.ac.id/">E-journal</a>
+                                        <a href="https://journal.makwafoundation.org/">journal</a>
                                     </div>
                                 </li>
                             </ul>
@@ -80,7 +80,7 @@
                     <div class="site-logo-wrap">
                         <div class="site-logo">
                             <a href="{{ route('home') }}"><img src="{{ $setting_web?->getLogo() ?? '' }}" alt="Logo"
-                                    style="height: 70px;"></a>
+                                    style="height: 50px; width: auto;">
                             </a>
                         </div>
                     </div>
