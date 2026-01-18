@@ -4,7 +4,7 @@
     <div class="header-brand">
         <!--begin::Logo-->
         <a href="{{ route("back.dashboard") }}">
-            <img alt="Logo" src="{{ Storage::url("setting/logo.png") }}" class="h-35px h-lg-45px" />
+            <img alt="Logo" src="{{ Storage::url("setting/logo.png") }}" class="h-10px h-lg-25px" />
         </a>
         <!--end::Logo-->
         <!--begin::Aside minimize-->
