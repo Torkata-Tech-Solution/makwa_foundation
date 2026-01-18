@@ -31,11 +31,11 @@
                                         <span><i class="fas fa-square-full"></i></span> Great Experience In
                                         Building
                                     </h6> --}}
-                                        <h1 class="slide-title animated ">
+                                        <h1 class="slide-title animated " style="color: #fff;">
                                             {{ $banner->title }}
                                         </h1>
-                                        <div class="slide-brief animated">
-                                            <p>
+                                        <div class="slide-brief animated" >
+                                            <p style="color: #fff;">
                                                 {{ $banner->subtitle }}
                                             </p>
                                         </div>

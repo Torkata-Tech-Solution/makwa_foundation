@@ -4,7 +4,7 @@
     <title>{{ $meta['description'] }}</title>
     <meta name="description" content="{{ $meta['description'] }}">
     <meta name="keywords" content="{{ $meta['keywords'] }}">
-    <meta name="author" content="UIN Sjech M.Djamil Djambek Bukittinggi">
+    <meta name="author" content="Makwa Foundation">
 
     <meta property="og:title" content="{{ $meta['title'] }}">
     <meta property="og:description" content="{{ $meta['description'] }}">

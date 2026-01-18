@@ -20,9 +20,11 @@
                             <li><a href="mailto:{{ $setting_web->email }}"><i class="icon-mail"></i>
                                     {{ $setting_web->email }}</a>
                             </li>
-                            <li><a href="#"><i class="icon-placeholder"></i>
+                            {{-- <li>
+                                <a href="#"><i class="icon-placeholder"></i>
                                     UIN Sjech M.Djamil Djambek Bukittinggi</a>
-                                </a></li>
+                                </a>
+                            </li> --}}
                         </ul>
                     </div>
                 </div>
