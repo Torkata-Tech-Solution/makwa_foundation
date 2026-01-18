@@ -68,6 +68,12 @@
             color: #333333;
             margin-bottom: 10px;
         }
+        .tb_onsite_upload_btn_wrapper {
+            display: none !important;
+        }
+        .tb_onsite_upload_btn_wrapper {
+            display: none !important;
+        }
     </style>
 @endsection
 
@@ -501,4 +507,28 @@
             }
         });
     </script>
+    <script>
+        $(document).ready(function() {
+            // Elemen dimuat secara dinamis oleh widget, jadi perlu dicek berulang kali
+            var attempts = 0;
+            var interval = setInterval(function() {
+                // Hapus tombol upload
+                $('.tb_onsite_upload_btn_wrapper, .tb_onsite_upload_btn').remove();
+
+                // Hapus "Powered by Tagembed"
+                $('a[href*="tagembed.com"]').filter(function() {
+                    return $(this).text().toLowerCase().indexOf('powered') !== -1 ||
+                           $(this).text().toLowerCase().indexOf('tagembed') !== -1;
+                }).remove();
+                $('.tagembed-powered, .powered-by-tagembed, .tb-powered').remove();
+                $('*:contains("Powered by Tagembed")').filter(function() {
+                    return $(this).children().length === 0;
+                }).remove();
+
+                attempts++;
+                if (attempts >= 20) clearInterval(interval);
+            }, 500);
+        });
+    </script>
+
 @endsection
