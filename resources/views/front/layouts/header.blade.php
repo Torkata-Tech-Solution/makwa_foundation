@@ -217,7 +217,7 @@
                                 </a>
                                 <ul>
                                     @auth
-                                        <li><a href="{{ route('account.profile') }}">{{ __('layout.my_profile') }}</a>
+                                        <li><a href="{{ route('back.profile.index') }}">{{ __('layout.my_profile') }}</a>
                                         </li>
                                         @role('super-admin|keuangan|editor|humas')
                                             <li><a href="{{ route('back.dashboard') }}">{{ __('layout.dashboard') }}</a></li>

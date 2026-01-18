@@ -26,13 +26,29 @@ class EventAttendance extends Model
         'updated_at',
     ];
 
+    public function eventAttendance()
+    {
+        return $this->belongsTo(EventAttendance::class, 'event_attendance_id');
+    }
+
+    public function eventUser()
+    {
+        return $this->belongsTo(EventUser::class, 'event_user_id');
+    }
+
+    /**
+     * Get event through eventAttendance relationship
+     */
     public function event()
     {
-        return $this->belongsTo(Event::class);
-    }
-    public function attendances()
-    {
-        return $this->hasMany(EventAttendanceUser::class, 'event_attendance_id');
+        return $this->hasOneThrough(
+            Event::class,
+            EventAttendance::class,
+            'id', // Foreign key on event_attendances table
+            'id', // Foreign key on event table
+            'event_attendance_id', // Local key on event_attendance_users table
+            'event_id' // Local key on event_attendances table
+        );
     }
 
 }
