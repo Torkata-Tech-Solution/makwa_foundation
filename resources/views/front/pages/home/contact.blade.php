@@ -23,7 +23,7 @@
                 <div class="col-lg-4">
                     <div class="ltn__contact-address-item ltn__contact-address-item-3 box-shadow">
                         <div class="ltn__contact-address-icon">
-                            <img src="{{ asset("front/img/icons/10.png") }}" alt="Icon Image">
+                            <img src="{{ asset('front/img/icons/10.png') }}" alt="Icon Image">
                         </div>
                         <h3>{{ __('front.email_address') }}</h3>
                         <p>
@@ -34,7 +34,7 @@
                 <div class="col-lg-4">
                     <div class="ltn__contact-address-item ltn__contact-address-item-3 box-shadow">
                         <div class="ltn__contact-address-icon">
-                            <img src="{{ asset("front/img/icons/11.png") }}" alt="Icon Image">
+                            <img src="{{ asset('front/img/icons/11.png') }}" alt="Icon Image">
                         </div>
                         <h3>{{ __('front.phone_number') }}</h3>
                         <p>
@@ -45,7 +45,7 @@
                 <div class="col-lg-4">
                     <div class="ltn__contact-address-item ltn__contact-address-item-3 box-shadow">
                         <div class="ltn__contact-address-icon">
-                            <img src="{{ asset("front/img/icons/12.png") }}" alt="Icon Image">
+                            <img src="{{ asset('front/img/icons/12.png') }}" alt="Icon Image">
                         </div>
                         <h3>{{ __('front.office_address') }}</h3>
                         <p>
@@ -70,7 +70,9 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="input-item input-item-name ltn__custom-icon">
-                                        <input type="text" name="name" placeholder="{{ __('front.enter_your_name') }}" value="{{ old('name') }}" required>
+                                        <input type="text" name="name"
+                                            placeholder="{{ __('front.enter_your_name') }}" value="{{ old('name') }}"
+                                            required>
                                         @error('name')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
@@ -78,7 +80,9 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="input-item input-item-email ltn__custom-icon">
-                                        <input type="email" name="email" placeholder="{{ __('front.enter_your_email') }}" value="{{ old('email') }}" required>
+                                        <input type="email" name="email"
+                                            placeholder="{{ __('front.enter_your_email') }}" value="{{ old('email') }}"
+                                            required>
                                         @error('email')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
@@ -86,7 +90,9 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="input-item input-item-phone ltn__custom-icon">
-                                        <input type="text" name="phone" placeholder="{{ __('front.enter_your_phone') }}" value="{{ old('phone') }}" required>
+                                        <input type="text" name="phone"
+                                            placeholder="{{ __('front.enter_your_phone') }}" value="{{ old('phone') }}"
+                                            required>
                                         @error('phone')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
@@ -94,7 +100,8 @@
                                 </div>
                                 <div class="col-md-12">
                                     <div class="input-item  ltn__custom-icon">
-                                        <input type="text" name="subject" placeholder="{{ __('front.enter_subject') }}" value="{{ old('subject') }}" required>
+                                        <input type="text" name="subject" placeholder="{{ __('front.enter_subject') }}"
+                                            value="{{ old('subject') }}" required>
                                         @error('subject')
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
@@ -108,8 +115,17 @@
                                 @enderror
                             </div>
                             <p><label class="input-info-save mb-0"><input type="checkbox" name="agree">
-                                {{ __('front.message_checkbox') }}
-                            </label></p>
+                                    {{ __('front.message_checkbox') }}
+                                </label></p>
+
+                            <div>
+                                {!! NoCaptcha::renderJs() !!}
+                                {!! NoCaptcha::display() !!}
+
+                                @error('g-recaptcha-response')
+                                    <div class="text-danger">{{ $message }}</div>
+                                @enderror
+                            </div>
                             <div class="btn-wrapper mt-0">
                                 <button class="btn theme-btn-1 btn-effect-1 text-uppercase" type="submit">
                                     {{ __('front.send_message') }}
@@ -127,8 +143,9 @@
     <!-- GOOGLE MAP AREA START -->
     <div class="google-map mb-120">
 
-        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d320.84241104217386!2d100.39786475676972!3d-0.3219989136461684!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2fd539e261f53f89%3A0xedfc275ef4afd8d0!2sRumah%20Jurnal%20UIN%20Bukittinggi!5e0!3m2!1sid!2sid!4v1741270898403!5m2!1sid!2sid" width="100%" height="100%" frameborder="0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+        <iframe
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d320.84241104217386!2d100.39786475676972!3d-0.3219989136461684!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2fd539e261f53f89%3A0xedfc275ef4afd8d0!2sRumah%20Jurnal%20UIN%20Bukittinggi!5e0!3m2!1sid!2sid!4v1741270898403!5m2!1sid!2sid"
+            width="100%" height="100%" frameborder="0" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
 
     </div>
-
 @endsection

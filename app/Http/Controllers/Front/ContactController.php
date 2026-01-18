@@ -31,7 +31,7 @@ class ContactController extends Controller
                     'name' => __('front.contact_us'),
                     'link' => route('contact.index')
                 ]
-                ],
+            ],
             'setting_web' => SettingWebsite::first()
         ];
         return view('front.pages.home.contact', $data);
@@ -44,7 +44,17 @@ class ContactController extends Controller
             'email' => 'required|email',
             'phone' => 'required',
             'subject' => 'required',
-            'message' => 'required'
+            'message' => 'required',
+            'g-recaptcha-response' => 'required|captcha',
+        ], [
+            'name.required' => 'Nama tidak boleh kosong',
+            'email.required' => 'Email tidak boleh kosong',
+            'email.email' => 'Format email tidak valid',
+            'phone.required' => 'Nomor telepon tidak boleh kosong',
+            'subject.required' => 'Subjek tidak boleh kosong',
+            'message.required' => 'Pesan tidak boleh kosong',
+            'g-recaptcha-response.required' => 'Captcha harus diisi',
+            'g-recaptcha-response.captcha' => 'Captcha tidak valid',
         ]);
 
         if ($validator->fails()) {
@@ -62,7 +72,5 @@ class ContactController extends Controller
 
         Alert::success('Success', 'Message has been sent');
         return redirect()->back();
-
-
     }
 }
