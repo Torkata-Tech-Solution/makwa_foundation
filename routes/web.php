@@ -138,6 +138,7 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
 
     Route::get('/dashboard', [BackDashboardController::class, 'index'])->name('dashboard');
     Route::prefix('dashboard')->name('dashboard.')->group(function () {
+        Route::get('/stats', [BackDashboardController::class, 'stats'])->name('stats');
         Route::get('/visitor-stat', [BackDashboardController::class, 'visistorStat'])->name('visitor.stat');
 
         Route::get('/news', [BackDashboardController::class, 'news'])->name('news');
@@ -147,7 +148,7 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
         Route::get('/cashflow-stat', [BackDashboardController::class, 'cashflowStat'])->name('cashflow.stat');
     });
 
-     Route::prefix('profile')->name('profile.')->group(function () {
+    Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/', [App\Http\Controllers\Back\ProfileController::class, 'index'])->name('index');
         Route::get('/settings', [App\Http\Controllers\Back\ProfileController::class, 'settings'])->name('settings');
         Route::get('/events', [App\Http\Controllers\Back\ProfileController::class, 'events'])->name('events');
@@ -222,16 +223,16 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
     Route::prefix('menu')->name('menu.')->group(function () {
 
 
-            Route::prefix('profil')->name('profil.')->group(function () {
-                Route::get('/', [BackMenuProfilController::class, 'index'])->name('index');
-                Route::post('/create', [BackMenuProfilController::class, 'store'])->name('store');
-                Route::get('/edit/{id}', [BackMenuProfilController::class, 'edit'])->name('edit');
-                Route::put('/edit/{id}', [BackMenuProfilController::class, 'update'])->name('update');
-                Route::delete('/delete/{id}', [BackMenuProfilController::class, 'destroy'])->name('destroy');
+        Route::prefix('profil')->name('profil.')->group(function () {
+            Route::get('/', [BackMenuProfilController::class, 'index'])->name('index');
+            Route::post('/create', [BackMenuProfilController::class, 'store'])->name('store');
+            Route::get('/edit/{id}', [BackMenuProfilController::class, 'edit'])->name('edit');
+            Route::put('/edit/{id}', [BackMenuProfilController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [BackMenuProfilController::class, 'destroy'])->name('destroy');
 
-                Route::post('/upload', [BackMenuProfilController::class, 'upload'])->name('upload');
-            });
+            Route::post('/upload', [BackMenuProfilController::class, 'upload'])->name('upload');
         });
+    });
 
     Route::prefix('journal')->name('journal.')->group(function () {
         Route::get('/{journal_path}', [BackJournalController::class, 'index'])->name('index');
@@ -327,7 +328,6 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
             Route::put('/edit/{reviewer_id}', [BackMasterDataController::class, 'reviewerUpdate'])->name('update');
             Route::get('/export', [BackMasterDataController::class, 'reviewerExport'])->name('export');
             Route::post('/sync-to-user', [BackMasterDataController::class, 'reviewerSyncToUser'])->name('sync-to-user');
-
         });
 
         Route::prefix('editor')->name('editor.')->group(function () {
@@ -376,7 +376,7 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
     //     });
     // });
 
-      Route::prefix('chatery-whatsapp')->name('chatery-whatsapp.')->group(function () {
+    Route::prefix('chatery-whatsapp')->name('chatery-whatsapp.')->group(function () {
         Route::get('/setting', [App\Http\Controllers\Back\WhatsappController::class, 'chaterySetting'])->name('setting');
 
         Route::prefix('message')->name('message.')->group(function () {
