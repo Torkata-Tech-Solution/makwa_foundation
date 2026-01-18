@@ -317,19 +317,19 @@
                 </div>
             </div>
 
-            <div data-kt-menu-trigger="click"
-                class="menu-item menu-accordion @if (request()->routeIs('back.whatsapp.*')) here show @endif">
+                <div data-kt-menu-trigger="click"
+                class="menu-item menu-accordion @if (request()->routeIs('back.chatery-whatsapp.*')) here show @endif">
                 <span class="menu-link">
                     <span class="menu-icon">
                         <i class="ki-duotone ki-setting-4 fs-2"></i>
                     </span>
-                    <span class="menu-title">Whatsapp API</span>
+                    <span class="menu-title">Whatsapp API - Chatery</span>
                     <span class="menu-arrow"></span>
                 </span>
                 <div class="menu-sub menu-sub-accordion">
                     <div class="menu-item">
-                        <a class="menu-link @if (request()->routeIs('back.whatsapp.setting')) active @endif"
-                            href="{{ route('back.whatsapp.setting') }}">
+                        <a class="menu-link @if (request()->routeIs('back.chatery-whatsapp.setting')) active @endif"
+                            href="{{ route('back.chatery-whatsapp.setting') }}">
                             <span class="menu-bullet">
                                 <span class="bullet bullet-dot"></span>
                             </span>
@@ -337,8 +337,8 @@
                         </a>
                     </div>
                     <div class="menu-item">
-                        <a class="menu-link @if (request()->routeIs('back.whatsapp.message.*')) active @endif"
-                            href="{{ route('back.whatsapp.message.index') }}">
+                        <a class="menu-link @if (request()->routeIs('back.chatery-whatsapp.message.*')) active @endif"
+                            href="{{ route('back.chatery-whatsapp.message.index') }}">
                             <span class="menu-bullet">
                                 <span class="bullet bullet-dot"></span>
                             </span>

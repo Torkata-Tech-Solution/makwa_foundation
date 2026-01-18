@@ -26,6 +26,7 @@ use App\Models\SettingWebsite;
 use App\Models\Submission;
 use App\Models\SubmissionEditor;
 use App\Models\SubmissionReviewer;
+use App\Services\WhatsappService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -2433,10 +2434,11 @@ class journalController extends Controller
                 if ($response2->status() === 200) {
                     $path = 'arsip/loa/' . 'LoA-' . $submission->submission_id . '-' . $submission->id . '-' . $submission->authors[0]['id'] . '.pdf';
                     $data2 = $response2->json();
-                    $response_wa = Http::post(env('WHATSAPP_API_URL')  . "/send-message", [
-                        'session' => env('WHATSAPP_API_SESSION'),
-                        'to' => whatsappNumber($data2["phone"]),
-                        'text' => "Halo Bapak/Ibu " . ($data2["fullName"] ?? '-') . "\n\n" .
+
+                     $whatsappService = new WhatsappService();
+                    $whatsappService->sendMessage(
+                        whatsappNumber($data2["phone"]),
+                        "Halo Bapak/Ibu " . ($data2["fullName"] ?? '-') . "\n\n" .
                             "Selamat! Kami dengan senang hati memberitahukan bahwa artikel Anda dengan *SUBMISSION ID: " . $submission->submission_id . "* telah diterima untuk publikasi di jurnal kami. Berikut adalah detailnya:\n\n" .
                             "Judul Artikel: " . ($submission->fullTitle ?? '-') . "\n" .
                             "Penulis: " . ($submission->authorsString ?? '-') . "\n" .
@@ -2449,12 +2451,30 @@ class journalController extends Controller
                             "Editorial Rumah Jurnal\n\n" .
                             "_generate by system_\n" .
                             url('/')
-                    ]);
-                    if ($response_wa->status() === 200) {
-                        Log::info('WhatsApp message sent successfully to ' . $data2["phone"]);
-                    } else {
-                        Log::error('Error sending WhatsApp message: ' . $response_wa->body());
-                    }
+                    );
+
+                    // $response_wa = Http::post(env('WHATSAPP_API_URL')  . "/send-message", [
+                    //     'session' => env('WHATSAPP_API_SESSION'),
+                    //     'to' => whatsappNumber($data2["phone"]),
+                    //     'text' => "Halo Bapak/Ibu " . ($data2["fullName"] ?? '-') . "\n\n" .
+                    //         "Selamat! Kami dengan senang hati memberitahukan bahwa artikel Anda dengan *SUBMISSION ID: " . $submission->submission_id . "* telah diterima untuk publikasi di jurnal kami. Berikut adalah detailnya:\n\n" .
+                    //         "Judul Artikel: " . ($submission->fullTitle ?? '-') . "\n" .
+                    //         "Penulis: " . ($submission->authorsString ?? '-') . "\n" .
+                    //         "Jurnal: " . ($submission->issue->journal->title ?? '-') . "\n" .
+                    //         "Edisi: Vol. " . ($submission->issue->volume ?? '-') . " No. " . ($submission->issue->number ?? '-') . " Tahun " . ($submission->issue->year ?? '-') . "\n\n" .
+                    //         "Kami lampirkan file surat penerimaan (Letter of Acceptance) untuk artikel Anda. Jika file tidak terkirim, Anda dapat mengunduhnya melalui tautan berikut:\n" .
+                    //         asset('storage/' . $path) . "\n\n" .
+                    //         "Terimakasih atas kontribusi Anda terhadap kemajuan ilmu pengetahuan melalui publikasi di jurnal kami.\n\n" .
+                    //         "Salam,\n" .
+                    //         "Editorial Rumah Jurnal\n\n" .
+                    //         "_generate by system_\n" .
+                    //         url('/')
+                    // ]);
+                    // if ($response_wa->status() === 200) {
+                    //     Log::info('WhatsApp message sent successfully to ' . $data2["phone"]);
+                    // } else {
+                    //     Log::error('Error sending WhatsApp message: ' . $response_wa->body());
+                    // }
                 } else {
                     Log::error('Error LoaObserver Response 2: ' . $response2->body());
                 }
