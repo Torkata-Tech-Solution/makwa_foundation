@@ -24,7 +24,7 @@
                             <div style="margin:0 60px 55px 60px">
                                 <a href="{{ route('home') }}" rel="noopener" target="_blank">
                                     <img alt="Logo"
-                                        src="https://rumahjurnal.uinbukittinggi.ac.id/storage/setting/logo.png"
+                                        src="https://makwafoundation.org/storage/setting/logo.png"
                                         style="height: 35px" />
                                 </a>
                             </div>
@@ -58,7 +58,7 @@
 
                                 <p style="margin-top:30px; color:#3F4254; line-height:1.6">
                                     Terima kasih,<br>
-                                    <strong>Tim Rumah Jurnal</strong>
+                                    <strong>Tim Makwa Foundation</strong>
                                 </p>
                             </div>
                         </div>
