@@ -24,9 +24,10 @@
 
 <body>
     <div style="position: absolute; top: -33; left: -34; width: 113%; height: 109%; z-index: -1;">
-        <img src="{{ public_path('ext_images/template_loa.png') }}" style="width: 100%; height: 100%; object-fit: cover;"
+        <img src="{{ public_path('ext_images/bg_letter.jpeg') }}" style="width: 100%; height: 100%; object-fit: cover;"
             alt="">
     </div>
+    <h2 style="margin-top: 145px; font-weight: bold; text-decoration: underline;">LETTER OF ACCEPTANCE</h2>
     <p style="top: 200px; left: 260px; position: absolute; font-size: 12px;">
         Number: {{ $number }}/LoA/JRNL/RJ/{{ $year }}
     </p>
