@@ -28,8 +28,8 @@
             alt="">
     </div>
     <h2 style="margin-top: 145px; font-weight: bold; text-decoration: underline;">LETTER OF ACCEPTANCE</h2>
-    <p style="top: 200px; left: 260px; position: absolute; font-size: 12px;">
-        Number: {{ $number }}/LoA/JRNL/RJ/{{ $year }}
+    <p style="top: 200px; left: 250px; position: absolute; font-size: 12px;">
+        Number: {{ $number }}/LOA-{{ $submission_id }}/MF/{{ $month }}/{{ $year }}
     </p>
 
     <div style="top: 250px;  position: absolute; font-size: 14px;">

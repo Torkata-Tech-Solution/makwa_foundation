@@ -384,6 +384,8 @@ class journalController extends Controller
             $data = [
                 'number' => $submission->number ?? "0000",
                 'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                'month' => Carbon::now()->format('m'),
+                'submission_id' => $submission->submission_id,
                 'name' => $author['name'],
                 'affiliation' => $author['affiliation'],
                 'title' => $submission->fullTitle,
@@ -466,6 +468,8 @@ class journalController extends Controller
                     'subject' => 'Letter of Acceptance (LoA) for ' . $author['name'],
                     'number' => $submission->number ?? "0000",
                     'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                    'month' => Carbon::now()->format('m'),
+                    'submission_id' => $submission->submission_id,
                     'name' => $author['name'],
                     'email' => $author['email'],
                     'affiliation' => $author['affiliation'],
@@ -555,6 +559,8 @@ class journalController extends Controller
             $data = [
                 'number' => $invoice->invoice_number ?? "0000",
                 'year' => $invoice->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                'month' => Carbon::now()->format('m'),
+                'submission_id' => $submission->submission_id,
                 'name' => $author['name'],
                 'affiliation' => $author['affiliation'],
                 'title' => $submission->fullTitle,
@@ -650,6 +656,8 @@ class journalController extends Controller
                         'subject' => 'Invoice for ' . $author['name'],
                         'number' => $invoice->invoice_number ?? "0000",
                         'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                        'month' => Carbon::now()->format('m'),
+                        'submission_id' => $submission->submission_id,
                         'authorString' => $submission->authorsString,
                         'name' => $author['name'],
                         'email' => $author['email'],
@@ -734,6 +742,8 @@ class journalController extends Controller
             $data = [
                 'number' => $invoice->invoice_number ?? "0000",
                 'year' => $invoice->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                'month' => Carbon::now()->format('m'),
+                'submission_id' => $submission->submission_id,
                 'name' => $author['name'],
                 'affiliation' => $author['affiliation'],
                 'title' => $submission->fullTitle,
@@ -824,6 +834,8 @@ class journalController extends Controller
                         'subject' => 'Invoice for ' . $author['name'],
                         'number' => $invoice->invoice_number ?? "0000",
                         'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                        'month' => Carbon::now()->format('m'),
+                        'submission_id' => $submission->submission_id,
                         'authorString' => $submission->authorsString,
                         'name' => $author['name'],
                         'email' => $author['email'],
@@ -907,6 +919,8 @@ class journalController extends Controller
             $data = [
                 'number' => $invoice->invoice_number ?? "0000",
                 'year' => $invoice->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                'month' => Carbon::now()->format('m'),
+                'submission_id' => $submission->submission_id,
                 'name' => $author['name'],
                 'affiliation' => $author['affiliation'],
                 'title' => $submission->fullTitle,
@@ -1002,6 +1016,8 @@ class journalController extends Controller
                         'subject' => 'Invoice for ' . $author['name'],
                         'number' => $invoice->invoice_number ?? "0000",
                         'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                        'month' => Carbon::now()->format('m'),
+                        'submission_id' => $submission->submission_id,
                         'authorString' => $submission->authorsString,
                         'name' => $author['name'],
                         'email' => $author['email'],
@@ -2435,7 +2451,7 @@ class journalController extends Controller
                     $path = 'arsip/loa/' . 'LoA-' . $submission->submission_id . '-' . $submission->id . '-' . $submission->authors[0]['id'] . '.pdf';
                     $data2 = $response2->json();
 
-                     $whatsappService = new WhatsappService();
+                    $whatsappService = new WhatsappService();
                     $whatsappService->sendMessage(
                         whatsappNumber($data2["phone"]),
                         "Halo Bapak/Ibu " . ($data2["fullName"] ?? '-') . "\n\n" .

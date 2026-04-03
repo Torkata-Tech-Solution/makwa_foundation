@@ -24,11 +24,12 @@
 
 <body style="line-height: 1.3;">
     <div style="position: absolute; top: -33; left: -34; width: 113%; height: 109%; z-index: -1;">
-        <img src="{{ public_path('ext_images/bg_invoice.png') }}" style="width: 100%; height: 100%; object-fit: cover;"
+        <img src="{{ public_path('ext_images/bg_letter.jpeg') }}" style="width: 100%; height: 100%; object-fit: cover;"
             alt="">
     </div>
-    <p style="top: 180px; left: 250px; position: absolute; font-size: 14px;">
-        Number: {{ $number }}/JRNL/UINSMDD/{{ $year }}
+    <h2 style="margin-top: 125px; font-weight: bold; text-decoration: underline;">INVOICE</h2>
+    <p style="top: 180px; left: 225px; position: absolute; font-size: 14px;">
+        Number: {{ $number }}/INVOICE-{{ $submission_id }}/MF/{{ $month }}/{{ $year }}
     </p>
 
     <div style="top: 200px;  position: absolute; font-size: 16px; padding: 0 28px;">
@@ -42,12 +43,12 @@
                 <tr style="line-height: 1;">
                     <td>Position</td>
                     <td>:</td>
-                    <td>Head office of Rumah Jurnal</td>
+                    <td>Director of Makwa Foundation</td>
                 </tr>
                 <tr style="line-height: 1;">
                     <td>Institution</td>
                     <td>:</td>
-                    <td>UIN Sjech M. Djamil Djambek Bukittinggi</td>
+                    <td>Makwa Foundation</td>
                 </tr>
             </table>
             </p>
@@ -84,20 +85,22 @@
                 href="https://rumahjurnal.uinbukittinggi.ac.id/payment">https://rumahjurnal.uinbukittinggi.ac.id/payment</a>
         </p>
         <p style="margin-top: -5px;">
-            If you have anything to ask, please get in touch Mrs. Herlinda via WhatsApp
-            +62 813-9675-3128.
+            If you have anything to ask, please get in touch Mr. Firdaus Annas via WhatsApp
+            +62 852-7856-6869.
         </p>
         <p style="margin-top: -5px;">
             With this, the latter is made for its purpose.
         </p>
 
-    <div class="signature" style="position: absolute; bottom: 380; left: 278; ">
-        <p style="margin-bottom: -5px" >Bukittinggi, {{ $date }}</p>
+     <div class="signature" style="position: absolute; bottom: 190; left: 295; ">
+        <p style="" >Bukittinggi, {{ $date }}</p>
+        <img style="height: 110px;"src="{{ public_path('ext_images/ttd.png') }}" alt="">
+        <p style=""><strong>Firdaus Annas, S.Pd., M.Kom</strong><br><small>Scopus ID. 57216153330</small></p>
     </div>
     </div>
 
-    <img style="position: absolute; bottom: -20; right: 10;  width: 100px;" src="{{ $journal_thumbnail }}"
-        alt="">
+    {{-- <img style="position: absolute; bottom: -20; right: 10;  width: 100px;" src="{{ $journal_thumbnail }}"
+        alt=""> --}}
 
 </body>
 
