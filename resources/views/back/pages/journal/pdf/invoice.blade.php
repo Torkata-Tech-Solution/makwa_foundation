@@ -82,7 +82,7 @@
 
         <p style="margin-top: -5px;">
             If you have made a payment, please confirm the payment via the following url : <a
-                href="https://rumahjurnal.uinbukittinggi.ac.id/payment">https://rumahjurnal.uinbukittinggi.ac.id/payment</a>
+                href="https://adm.makwafoundation.org/payment">https://adm.makwafoundation.org/payment</a>
         </p>
         <p style="margin-top: -5px;">
             If you have anything to ask, please get in touch Mr. Firdaus Annas via WhatsApp
