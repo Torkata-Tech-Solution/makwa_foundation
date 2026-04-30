@@ -155,7 +155,7 @@
                                                     <div class="card">
                                                         <h6 class="collapsed ltn__card-title" data-toggle="collapse"
                                                             data-target="#item-{{ $invoice->id }}" aria-expanded="false">
-                                                            INVOICE {{ $invoice->invoice_number }}/JRNL/UINSMDD/{{ $invoice->created_at->format('Y') }} -
+                                                             {{ $invoice->invoice_number }}/INVOICE-{{ $invoice->submission->submission_id ?? '-' }}/MF/{{ $invoice->created_at->format('m') ?? '-' }}/{{ $invoice->created_at ? $invoice->created_at->format('Y') : '-' }} -
                                                             @if ($invoice->is_paid)
                                                                 <span
                                                                     class="badge badge-success text-white">{{ __('front.paid') }}</span>
@@ -174,7 +174,7 @@
                                                                         <tr>
                                                                             <th>{{ __('front.invoice_number') }}</th>
                                                                             <td> : </td>
-                                                                            <td>{{ $invoice->invoice_number }}/JRNL/UINSMDD/{{ $invoice->created_at->format('Y') }}</td>
+                                                                            <td>{{ $invoice->invoice_number }}/INVOICE-{{$invoice->submission->submission_id ?? '-' }}/MF/{{ $invoice->created_at->format('m') ?? '-' }}/{{ $invoice->created_at ? $invoice->created_at->format('Y') : '-' }}</td>
                                                                         </tr>
                                                                         <tr>
                                                                             <th>{{ __('front.due_date') }}</th>

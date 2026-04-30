@@ -181,7 +181,7 @@
                                                     percentage="{{ $invoice->payment_percent }}"
                                                     {{ old('payment_invoice_id') == $invoice->id ? 'selected' : '' }}>
                                                     INVOICE
-                                                    {{ $invoice->invoice_number }}/JRNL/UINSMDD/{{ $invoice->created_at->format('Y') }}
+                                                    {{ $invoice->invoice_number }}/INVOICE-{{ $invoice->submission->submission_id ?? '-' }}/MF/{{ $invoice->created_at->format('m') ?? '-' }}/{{ $invoice->created_at ? $invoice->created_at->format('Y') : '-' }}
                                                 </option>
                                             @empty
                                                 <option value="" disabled selected>

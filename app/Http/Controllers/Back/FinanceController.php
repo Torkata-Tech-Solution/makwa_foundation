@@ -112,7 +112,7 @@ class FinanceController extends Controller
             ->addColumn('invoice', function ($payment) {
                 return '
                         <div class="d-flex flex-column">
-                            <span class="text-gray-800 mb-1">INVOICE ' . $payment->paymentInvoice->invoice_number . '/JRNL/UINSMDD/' . $payment->paymentInvoice->created_at->format('Y') . '</span>
+                            <span class="text-gray-800 mb-1">INVOICE ' . ($payment->paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . '</span>
                             <span>Persentase: ' . $payment->paymentInvoice->payment_percent . '%</span>
                             <span>Jumlah: Rp ' . number_format($payment->paymentInvoice->payment_amount, 0, ',', '.') . '</span>
                         </div>
@@ -520,7 +520,7 @@ class FinanceController extends Controller
                 foreach ($submission->paymentInvoices as $paymentInvoice) {
                     $paymentInfo .= '
                         <div class="d-flex flex-column">
-                            <span class="text-gray-800 mb-1">INVOICE ' . $paymentInvoice->invoice_number . '/JRNL/UINSMDD/' . $paymentInvoice->created_at->format('Y') . '</span>
+                            <span class="text-gray-800 mb-1">INVOICE ' . ($paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/INVOICE-" . ($paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($paymentInvoice->created_at->format('m') ?? '-') . "/" . ($paymentInvoice->created_at ? $paymentInvoice->created_at->format('Y') : '-') . '</span>
                             <span>pembayaran: ' . $paymentInvoice->payment_percent . '% - Rp ' . number_format($paymentInvoice->payment_amount, 0, ',', '.') .  ($paymentInvoice->is_paid ? ' <span class="badge badge-light-success">Sudah Dibayar</span>' : ' <span class="badge badge-light-warning">Belum Dibayar</span>') . '</span>
                         </div>
                     ';
@@ -737,15 +737,15 @@ class FinanceController extends Controller
                 ];
             })->collect();
 
-        $billing = Payment::with(['paymentInvoice'])
+        $billing = Payment::with(['paymentInvoice.submission'])
             ->whereBetween('created_at', [$date_start, $date_end])
             ->where('payment_status', 'accepted')
             ->get()
             ->map(function ($item) {
                 return (object)[
                     'id' => null,
-                    'name' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/JRNL/UINSMDD/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-'),
-                    'description' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice') . "/JRNL/UINSMDD/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-') . ' Yang Telah Dibayarkan Oleh ' . ($item->name ?? 'Unknown Payer'),
+                    'name' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/INVOICE-" . ($item->paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($item->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-'),
+                    'description' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice') . "/INVOICE-" . ($item->paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($item->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-') . ' Yang Telah Dibayarkan Oleh ' . ($item->name ?? 'Unknown Payer'),
                     'type' => 'income',
                     'amount' => $item->paymentInvoice->payment_amount ?? 0,
                     'date' => $item->payment_timestamp,
