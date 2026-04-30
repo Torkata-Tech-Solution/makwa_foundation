@@ -24,7 +24,7 @@ class PaymentObserver
                 whatsappNumber($payment->phone),
                 "Halo Bapak/Ibu " . $payment->name . ",\n\n" .
                     "Terima kasih telah melakukan pembayaran. Berikut adalah detail pembayarannya:\n\n" .
-                    "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($payment->paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+                    "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '-0') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . "\n" .
                     "Jurnal: " . ($payment->paymentInvoice->submission->issue->journal->title ?? '-') . "\n" .
                     "Edisi: " . 'Vol. ' . $payment->paymentInvoice->submission->issue->volume . ' No. ' . $payment->paymentInvoice->submission->issue->number . ' Tahun ' . $payment->paymentInvoice->submission->issue->year . "\n" .
                     "Submission ID: " . ($payment->paymentInvoice->submission->submission_id ?? '-') . "\n\n" .
@@ -93,7 +93,7 @@ class PaymentObserver
                     "Halo Bapak/Ibu " . $admin->name . ",\n\n" .
                         "🔔 Ada Pembayaran Masuk dari Makwa Foundation. " .
                         "Konfirmasi Pembayaran  dari Penulis. Berikut adalah detail pembayarannya:\n\n" .
-                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($payment->paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '0') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . "\n" .
                         "Jurnal: " . ($payment->paymentInvoice->submission->issue->journal->title ?? '-') . "\n" .
                         "Edisi: " . 'Vol. ' . $payment->paymentInvoice->submission->issue->volume . ' No. ' . $payment->paymentInvoice->submission->issue->number . ' Tahun ' . $payment->paymentInvoice->submission->issue->year . "\n" .
                         "Submission ID: " . ($payment->paymentInvoice->submission->submission_id ?? '-') . "\n\n" .
@@ -139,7 +139,7 @@ class PaymentObserver
                     whatsappNumber($payment->phone),
                     "Halo Bapak/Ibu " . $payment->name . ",\n\n" .
                         "Pembayaran artikel anda telah kami terima dan telah kami konfirmasi. Berikut adalah detail pembayarannya:\n\n" .
-                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($payment->paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '0') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . "\n" .
                         "Jurnal: " . ($payment->paymentInvoice->submission->issue->journal->title ?? '-') . "\n" .
                         "Edisi: " . 'Vol. ' . $payment->paymentInvoice->submission->issue->volume . ' No. ' . $payment->paymentInvoice->submission->issue->number . ' Tahun ' . $payment->paymentInvoice->submission->issue->year . "\n" .
                         "Submission ID: " . ($payment->paymentInvoice->submission->submission_id ?? '-') . "\n" .
@@ -184,7 +184,7 @@ class PaymentObserver
                         env('MAIL_ENVIRONMENT') == 'production' ? whatsappNumber($admin->phone) : whatsappNumber(env('WHATSAPP_ADMIN_NUMBER')),
                         "Halo Bapak/Ibu " . $admin->name . ",\n\n" .
                             "✅ Pembayaran dari penulis telah disetujui oleh operator keuangan. Berikut adalah detail pembayarannya:\n\n" .
-                            "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($payment->paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+                            "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '0') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . "\n" .
                             "Jurnal: " . ($payment->paymentInvoice->submission->issue->journal->title ?? '-') . "\n" .
                             "Edisi: " . 'Vol. ' . $payment->paymentInvoice->submission->issue->volume . ' No. ' . $payment->paymentInvoice->submission->issue->number . ' Tahun ' . $payment->paymentInvoice->submission->issue->year . "\n" .
                             "Submission ID: " . ($payment->paymentInvoice->submission->submission_id ?? '-') . "\n\n" .
@@ -208,7 +208,7 @@ class PaymentObserver
                     whatsappNumber($payment->phone),
                     "Halo " . $payment->name . ",\n\n" .
                         "Kami menyesal memberitahukan bahwa pembayaran artikel anda telah ditolak. Berikut adalah detail pembayarannya:\n\n" .
-                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($payment->paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+                        "INVOICE: " . ($payment->paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($payment->paymentInvoice->submission->submission_id ?? '0') . "/MF/" . ($payment->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($payment->paymentInvoice->created_at ? $payment->paymentInvoice->created_at->format('Y') : '-') . "\n" .
                         "Jurnal: " . ($payment->paymentInvoice->submission->issue->journal->title ?? '-') . "\n" .
                         "Edisi: " . 'Vol. ' . $payment->paymentInvoice->submission->issue->volume . ' No. ' . $payment->paymentInvoice->submission->issue->number . ' Tahun ' . $payment->paymentInvoice->submission->issue->year . "\n" .
                         "Submission ID: " . ($payment->paymentInvoice->submission->submission_id ?? '-') . "\n" .
