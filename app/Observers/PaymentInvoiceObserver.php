@@ -48,7 +48,7 @@ class PaymentInvoiceObserver
         //                 'to' => whatsappNumber($data2["phone"]),
         //                 'text' => "Halo Bapak/Ibu " . ($data2["fullName"] ?? '-') . "\n\n" .
         //                     "Invoice untuk untuk pembayaran artikel Anda dengan *SUBMISSION ID: " . $paymentInvoice->submission->submission_id . "* telah terbit. Berikut adalah detail invoice Anda:\n\n" .
-        //                     "INVOICE: " . ($paymentInvoice->invoice_number ?? "0000") . "/JRNL/UINSMDD/" . ($paymentInvoice->created_at->format('Y') ?? Carbon::now()->format('Y')) . "\n" .
+        //                     "INVOICE: " . ($paymentInvoice->invoice_number ?? "0000") . "/INVOICE-" . ($paymentInvoice->submission->submission_id ?? '0') . "/MF/" . ($paymentInvoice->created_at->format('m') ?? '-') . "/" . ($paymentInvoice->created_at ? $paymentInvoice->created_at->format('Y') : '-') . "\n" .
         //                     "Jumlah: Rp " . number_format($paymentInvoice->payment_amount, 0, ',', '.') . "\n" .
         //                     "Persentase Pembayaran: " . ($paymentInvoice->payment_percent ?? '-') . "%\n" .
 
