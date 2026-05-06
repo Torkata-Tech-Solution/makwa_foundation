@@ -120,13 +120,6 @@ class PaymentController extends Controller
         if ($submission->issue->journal->url_path != $journal->url_path) {
             abort(404);
         }
-        if ($submission->paymentInvoices()->where('is_paid', false)->count() == 0) {
-            Alert::info('Info', 'No pending payment invoices for this submission');
-            return redirect()->route('payment.submission', ['journal_path' => $journal_path, 'submission_id' => $submission_id]);
-        }
-
-
-
 
         $setting_web = SettingWebsite::first();
         $data = [
