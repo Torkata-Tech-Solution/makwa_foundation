@@ -518,6 +518,13 @@
                                             <span class="text-success fs-7 fw-bold">Lunas</span>
                                         @else
                                             <span class="text-warning fs-7 fw-bold">Belum Dibayar</span>
+                                            <form action="{{ route('back.journal.invoice.destroy', $tagihan1->id) }}" method="POST" class="d-inline ms-2" onsubmit="return confirm('Apakah anda yakin ingin membatalkan invoice tagihan 1? Data invoice dan history pembayaran terkait akan dihapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-light-danger py-0 px-2 fs-8">
+                                                    <i class="ki-duotone ki-cross-circle fs-7"><span class="path1"></span><span class="path2"></span></i> Batalkan
+                                                </button>
+                                            </form>
                                         @endif
                                     @else
                                         <span class="text-danger fw-bold">Belum Terbit</span>
@@ -555,6 +562,13 @@
                                             <span class="text-success fs-7 fw-bold">Lunas</span>
                                         @else
                                             <span class="text-warning fs-7 fw-bold">Belum Dibayar</span>
+                                            <form action="{{ route('back.journal.invoice.destroy', $tagihan2->id) }}" method="POST" class="d-inline ms-2" onsubmit="return confirm('Apakah anda yakin ingin membatalkan invoice tagihan 2? Data invoice dan history pembayaran terkait akan dihapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-light-danger py-0 px-2 fs-8">
+                                                    <i class="ki-duotone ki-cross-circle fs-7"><span class="path1"></span><span class="path2"></span></i> Batalkan
+                                                </button>
+                                            </form>
                                         @endif
                                     @else
                                         <span class="text-danger fw-bold">Belum Terbit</span>
@@ -598,6 +612,13 @@
                                             <span class="text-success fs-7 fw-bold">Lunas</span>
                                         @else
                                             <span class="text-warning fs-7 fw-bold">Belum Dibayar</span>
+                                            <form action="{{ route('back.journal.invoice.destroy', $tagihan3->id) }}" method="POST" class="d-inline ms-2" onsubmit="return confirm('Apakah anda yakin ingin membatalkan invoice tagihan 3? Data invoice dan history pembayaran terkait akan dihapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-light-danger py-0 px-2 fs-8">
+                                                    <i class="ki-duotone ki-cross-circle fs-7"><span class="path1"></span><span class="path2"></span></i> Batalkan
+                                                </button>
+                                            </form>
                                         @endif
                                     @else
                                         <span class="text-danger fw-bold">Belum Terbit</span>
@@ -632,6 +653,13 @@
                                             <span class="text-success fs-7 fw-bold">Lunas</span>
                                         @else
                                             <span class="text-warning fs-7 fw-bold">Belum Dibayar</span>
+                                            <form action="{{ route('back.journal.invoice.destroy', $tagihan_custom->id) }}" method="POST" class="d-inline ms-2" onsubmit="return confirm('Apakah anda yakin ingin membatalkan invoice tagihan custom? Data invoice dan history pembayaran terkait akan dihapus.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-light-danger py-0 px-2 fs-8">
+                                                    <i class="ki-duotone ki-cross-circle fs-7"><span class="path1"></span><span class="path2"></span></i> Batalkan
+                                                </button>
+                                            </form>
                                         @endif
                                     @else
                                         Tagihan Custom (100%) - <span class="text-danger fw-bold">Belum Terbit</span>
