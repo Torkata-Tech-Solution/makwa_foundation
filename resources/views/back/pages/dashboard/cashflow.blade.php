@@ -92,7 +92,7 @@
                     <div class="card-header pt-5">
                         <div class="card-title d-flex flex-column">
                             <span class="fs-2hx fw-bold text-white me-2 lh-1" id="distribution_rumah_jurnal_card">Rp 0</span>
-                            <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Distribusi ke Rumah Jurnal</span>
+                            <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Distribusi ke Editor Jurnal</span>
                         </div>
                     </div>
                     <div class="card-body d-flex align-items-end pt-0">
@@ -115,7 +115,7 @@
                     <div class="card-header pt-5">
                         <div class="card-title d-flex flex-column">
                             <span class="fs-2hx fw-bold text-white me-2 lh-1" id="distribution_blu_card">Rp 0</span>
-                            <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Distribusi ke BLU UIN Bukittinggi</span>
+                            <span class="text-white opacity-75 pt-1 fw-semibold fs-6">Distribusi ke Yayasan Makwa Foundation</span>
                         </div>
                     </div>
                     <div class="card-body d-flex align-items-end pt-0">
@@ -163,7 +163,7 @@
                     <div class="card-header pt-5">
                         <h3 class="card-title align-items-start flex-column">
                             <span class="card-label fw-bold text-gray-900">Distribusi Pendapatan</span>
-                            <span class="text-gray-500 mt-1 fw-semibold fs-6">Rumah Jurnal vs BLU UIN</span>
+                            <span class="text-gray-500 mt-1 fw-semibold fs-6">Editor Jurnal vs Yayasan Makwa Foundation</span>
                         </h3>
                     </div>
                     <div class="card-body pt-0 px-0">
@@ -560,7 +560,7 @@
             width: 380,
             type: 'donut',
         },
-        labels: ['Rumah Jurnal', 'BLU UIN Bukittinggi'],
+        labels: ['Editor Jurnal', 'Yayasan Makwa Foundation'],
         colors: ['#009ef7', '#FF8C00'],
         responsive: [{
             breakpoint: 480,
