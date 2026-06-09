@@ -139,12 +139,11 @@
                         <h4 class="footer-title">External Link</h4>
                         <div class="footer-menu">
                             <ul>
-                                <li><a href="https://uinbukittinggi.ac.id/">UIN Bukittinggi</a></li>
-                                <li><a href="https://ftik.uinbukittinggi.ac.id/">FTIK UIN Bukittinggi</a></li>
-                                <li><a href="https://fsyar.uinbukittinggi.ac.id/">FSYAR UIN Bukittinggi</a></li>
-                                <li><a href="https://febi.uinbukittinggi.ac.id/">FEBI UIN Bukittinggi </a></li>
-                                <li><a href="https://fuad.uinbukittinggi.ac.id/">FUAD UIN Bukittinggi </a></li>
-                                <li><a href="https://pasca.uinbukittinggi.ac.id/">Pasca UIN Bukittinggi </a></li>
+                                <li><a href="https://makwafoundation.org/">Makwa Foundation</a></li>
+                                <li><a href="https://adm.makwafoundation.org/">ADM Makwa Foundation</a></li>
+                                <li><a href="https://sinta.kemdiktisaintek.go.id/">SINTA Kemendiktisaintek</a></li>
+                                <li><a href="https://doaj.org/">DOAJ </a></li>
+                                <li><a href="https://scopus.com/">SCOPUS </a></li>
                             </ul>
                         </div>
                     </div>
