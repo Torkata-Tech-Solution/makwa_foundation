@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('welcome_speech', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('title');
+            $table->string('subtitle')->nullable();
             $table->string('image');
             $table->LongText('content');
             $table->timestamps();
