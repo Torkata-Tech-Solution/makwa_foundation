@@ -28,8 +28,10 @@ use App\Http\Controllers\Back\MenuProfilController as BackMenuProfilController;
 use App\Http\Controllers\Back\UserController as BackUserController;
 use App\Http\Controllers\Back\MessageController as BackMessageController;
 use App\Http\Controllers\Back\SettingController as BackSettingController;
+use App\Http\Controllers\Back\ManuscriptSubmissionController as BackManuscriptSubmissionController;
 use App\Http\Controllers\Front\AccountController;
 use App\Http\Controllers\Front\TeamController;
+use App\Http\Controllers\Front\ManuscriptSubmissionController;
 
 Route::get('generate-storage', function () {
     \Illuminate\Support\Facades\Artisan::call('storage:link');
@@ -135,6 +137,16 @@ Route::prefix('contact')->name('contact.')->group(function () {
     Route::post('/', [ContactController::class, 'send'])->name('send');
 });
 
+Route::prefix('manuscript-submission')->name('manuscript-submission.')->group(function () {
+    Route::get('/', [ManuscriptSubmissionController::class, 'create'])->name('create');
+    Route::post('/', [ManuscriptSubmissionController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('store');
+    Route::get('/success/{submission_code}', [ManuscriptSubmissionController::class, 'success'])
+        ->whereUuid('submission_code')
+        ->name('success');
+});
+
 Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(function () {
 
 
@@ -238,6 +250,18 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
 
     Route::prefix('journal')->name('journal.')->group(function () {
         Route::get('/{journal_path}', [BackJournalController::class, 'index'])->name('index');
+
+        Route::prefix('/{journal_path}/manuscript-submissions')
+            ->name('manuscript-submissions.')
+            ->group(function () {
+                Route::get('/', [BackManuscriptSubmissionController::class, 'index'])->name('index');
+                Route::get('/{submission_code}', [BackManuscriptSubmissionController::class, 'show'])
+                    ->whereUuid('submission_code')
+                    ->name('show');
+                Route::patch('/{submission_code}/status', [BackManuscriptSubmissionController::class, 'updateStatus'])
+                    ->whereUuid('submission_code')
+                    ->name('status');
+        });
 
         Route::post('/{journal_path}/issue/store', [BackJournalController::class, 'issueStore'])->name('issue.store');
         Route::put('/{journal_path}/issue/{issue_id}/update', [BackJournalController::class, 'issueUpdate'])->name('issue.update');
