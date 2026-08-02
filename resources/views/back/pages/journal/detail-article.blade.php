@@ -365,6 +365,18 @@
                                                     </div>
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <td>Tipe APC</td>
+                                                <td>:</td>
+                                                <td>
+                                                    <select class="form-select" name="apc_type" id="apc_type_{{ $submission->id }}">
+                                                        <option value="Regular" {{ ($submission->apc_type ?? 'Regular') == 'Regular' ? 'selected' : '' }}>Regular</option>
+                                                        <option value="Priority Review Administration" {{ ($submission->apc_type ?? '') == 'Priority Review Administration' ? 'selected' : '' }}>Priority Review Administration</option>
+                                                        <option value="Professional Editorial Support" {{ ($submission->apc_type ?? '') == 'Professional Editorial Support' ? 'selected' : '' }}>Professional Editorial Support</option>
+                                                    </select>
+                                                </td>
+                                            </tr>
+                                            
                                         </table>
                                     </div>
                                     <div class="separator my-5"></div>

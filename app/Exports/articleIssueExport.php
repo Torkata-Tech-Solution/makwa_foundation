@@ -72,7 +72,7 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                $sheet->mergeCells('A1:I1');
+                $sheet->mergeCells('A1:J1');
 
                 $issue = Issue::with('journal')->where('id', $this->issue_id)->first();
                 $submissions = $issue->submissions;
@@ -81,23 +81,23 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(16);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->mergeCells('A2:I2');
+                $sheet->mergeCells('A2:J2');
                 $sheet->setCellValue('A2', 'Import Tanggal: ' . date('d-m-Y H:i:s'));
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->mergeCells('A4:I4');
-                $sheet->getStyle('A4:I4')->getFont()->setBold(true);
+                $sheet->mergeCells('A4:J4');
+                $sheet->getStyle('A4:J4')->getFont()->setBold(true);
                 $sheet->setCellValue('A4', 'Jurnal: ' . $issue->journal->title);
 
-                $sheet->mergeCells('A5:I5');
-                $sheet->getStyle('A5:I5')->getFont()->setBold(true);
+                $sheet->mergeCells('A5:J5');
+                $sheet->getStyle('A5:J5')->getFont()->setBold(true);
                 $sheet->setCellValue('A5', 'Issue: Vol.' . $issue->volume . ' No.' . $issue->number . '  (' . $issue->year . '): ' . $issue->title);
 
-                $sheet->mergeCells('A6:I6');
-                $sheet->getStyle('A6:I6')->getFont()->setBold(true);
+                $sheet->mergeCells('A6:J6');
+                $sheet->getStyle('A6:J6')->getFont()->setBold(true);
                 $sheet->setCellValue('A6', 'Total Article: ' . $issue->submissions->count());
 
-                $sheet->getStyle('A8:I9')->applyFromArray([
+                $sheet->getStyle('A8:J9')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'color' => ['rgb' => 'FFFF00'],  // Warna kuning
@@ -105,7 +105,7 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                 ]);
 
                 // Menambahkan border untuk heading
-                $sheet->getStyle('A8:I9')->applyFromArray([
+                $sheet->getStyle('A8:J9')->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -134,23 +134,27 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                 $sheet->mergeCells('E8:E9');
                 $sheet->getStyle('E8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
 
-                $sheet->setCellValue('F8', 'Link Publish');
+                $sheet->setCellValue('F8', 'Tipe APC');
                 $sheet->mergeCells('F8:F9');
                 $sheet->getStyle('F8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
 
-                $sheet->setCellValue('G8', 'Editor');
+                $sheet->setCellValue('G8', 'Link Publish');
                 $sheet->mergeCells('G8:G9');
                 $sheet->getStyle('G8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
 
-                $sheet->setCellValue('H8', 'Reviewer');
-                $sheet->mergeCells('H8:I8');
+                $sheet->setCellValue('H8', 'Editor');
+                $sheet->mergeCells('H8:H9');
                 $sheet->getStyle('H8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-                $sheet->setCellValue('H9', 'Nama');
-                $sheet->getStyle('H9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                $sheet->setCellValue('I9', 'Affiliasi');
-                $sheet->getStyle('I9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-                $sheet->getStyle('A8:I9')->getFont()->setBold(true);
+                $sheet->setCellValue('I8', 'Reviewer');
+                $sheet->mergeCells('I8:J8');
+                $sheet->getStyle('I8')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+                $sheet->setCellValue('I9', 'Nama');
+                $sheet->getStyle('I9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                $sheet->setCellValue('J9', 'Affiliasi');
+                $sheet->getStyle('J9')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+                $sheet->getStyle('A8:J9')->getFont()->setBold(true);
 
                  $currentRow = 10;
 
@@ -168,20 +172,22 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                          $sheet->mergeCells('E' . $startRow . ':E' . $endRow);
                          $sheet->mergeCells('F' . $startRow . ':F' . $endRow);
                          $sheet->mergeCells('G' . $startRow . ':G' . $endRow);
+                         $sheet->mergeCells('H' . $startRow . ':H' . $endRow);
                      }
 
                      // Set nilai untuk kolom yang di-merge
                      $sheet->setCellValue('A' . $startRow, $submission->submission_id);
                      $sheet->setCellValue('D' . $startRow, $submission->FullTitle);
                      $sheet->setCellValue('E' . $startRow, $submission->status_label);
+                     $sheet->setCellValue('F' . $startRow, $submission->apc_type ?? 'Regular');
 
                      if ($submission->urlPublished) {
-                         $sheet->setCellValue('F' . $startRow, '=HYPERLINK("' . $submission->urlPublished . '", "lihat")');
-                         $sheet->getStyle('F' . $startRow)->getFont()->getColor()->setRGB('0000FF');
-                         $sheet->getStyle('F' . $startRow)->getFont()->setUnderline(true);
+                         $sheet->setCellValue('G' . $startRow, '=HYPERLINK("' . $submission->urlPublished . '", "lihat")');
+                         $sheet->getStyle('G' . $startRow)->getFont()->getColor()->setRGB('0000FF');
+                         $sheet->getStyle('G' . $startRow)->getFont()->setUnderline(true);
                      }
 
-                     $sheet->setCellValue('G' . $startRow, $submission->editors->pluck('name')->implode(", "));
+                     $sheet->setCellValue('H' . $startRow, $submission->editors->pluck('name')->implode(", "));
 
                      // Align center vertical untuk merged cells
                      if ($maxRows > 1) {
@@ -190,6 +196,7 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                          $sheet->getStyle('E' . $startRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                          $sheet->getStyle('F' . $startRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                          $sheet->getStyle('G' . $startRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+                         $sheet->getStyle('H' . $startRow)->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                      }
 
                      // Isi authors dan affiliations per baris
@@ -202,8 +209,8 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                      // Isi reviewers per baris
                      foreach ($submission->reviewers as $reviewerIndex => $reviewer) {
                          $row = $startRow + $reviewerIndex;
-                         $sheet->setCellValue('H' . $row, $reviewer->name);
-                            $sheet->setCellValue('I' . $row, $reviewer->affiliation);
+                         $sheet->setCellValue('I' . $row, $reviewer->name);
+                         $sheet->setCellValue('J' . $row, $reviewer->affiliation);
                      }
 
                      $currentRow += $maxRows;
@@ -211,7 +218,7 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
 
                 // Menambahkan border untuk data (mulai dari baris 5 sampai baris terakhir)
                 $rowCount = $sheet->getHighestRow();
-                $sheet->getStyle('A9:I' . $rowCount)->applyFromArray([
+                $sheet->getStyle('A9:J' . $rowCount)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -227,7 +234,7 @@ class articleIssueExport implements WithStyles, WithEvents, WithCustomStartCell
                 ]);
 
                 // Auto-fit kolom (menyesuaikan lebar kolom dengan konten)
-                foreach (range('A', 'I') as $column) {
+                foreach (range('A', 'J') as $column) {
                     $sheet->getColumnDimension($column)->setAutoSize(true);
                 }
             },

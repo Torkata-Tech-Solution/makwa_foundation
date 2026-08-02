@@ -266,6 +266,7 @@ class journalController extends Controller
         $validator = Validator::make($request->all(), [
             'reviewer' => 'nullable|array',
             'editor' => 'nullable|array',
+            'apc_type' => 'nullable|string|in:Regular,Priority Review Administration,Professional Editorial Support',
         ], [
             'reviewer.required' => 'Reviewer harus dipilih',
             'reviewer.array' => 'Reviewer harus dipilih',
@@ -278,6 +279,7 @@ class journalController extends Controller
 
         $submission->update([
             'free_charge' => $request->free_charge ? 1 : 0,
+            'apc_type' => $request->apc_type ?? 'Regular',
         ]);
 
 

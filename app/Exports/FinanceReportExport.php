@@ -66,6 +66,7 @@ class FinanceReportExport implements FromCollection, WithHeadings, WithStyles, W
                     'authors' => $submission->authorsString,
                     'submission' => '(ID: ' . $submission->submission_id . ') ' . $submission->fullTitle,
                     'edition' => 'Vol. ' . $submission->issue->volume . ' No. ' . $submission->issue->number . ' (' . $submission->issue->year . '): ' . $submission->issue->title,
+                    'apc_type' => $submission->apc_type ?? 'Regular',
                     'total_pembyaran' => $submission->paymentInvoices->where('is_paid', 1)->sum('payment_amount'),
                     'loa' => (function () use ($submission) {
                         $authorId = $submission->authors[0]['id'] ?? null;
@@ -89,6 +90,7 @@ class FinanceReportExport implements FromCollection, WithHeadings, WithStyles, W
             'Penulis',
             'Judul Pengajuan',
             'Edisi',
+            'Tipe APC',
             'Total Pembayaran',
             'Status LoA',
         ];
