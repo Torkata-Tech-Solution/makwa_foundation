@@ -137,7 +137,7 @@ Route::prefix('contact')->name('contact.')->group(function () {
     Route::post('/', [ContactController::class, 'send'])->name('send');
 });
 
-Route::prefix('manuscript-submission')->name('manuscript-submission.')->group(function () {
+Route::prefix('submission')->name('manuscript-submission.')->group(function () {
     Route::get('/', [ManuscriptSubmissionController::class, 'create'])->name('create');
     Route::post('/', [ManuscriptSubmissionController::class, 'store'])
         ->middleware('throttle:10,1')
