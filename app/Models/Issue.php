@@ -19,6 +19,18 @@ class Issue extends Model
     }
     protected $guarded = ['id', 'created_at', 'updated_at'];
 
+    protected static function booted(): void
+    {
+        static::creating(function ($issue) {
+            if (! isset($issue->attributes['author_fee']) || is_null($issue->author_fee)) {
+                $journal = $issue->journal ?? Journal::find($issue->journal_id);
+                if ($journal) {
+                    $issue->author_fee = $journal->author_fee ?? 0;
+                }
+            }
+        });
+    }
+
     public function journal()
     {
         return $this->belongsTo(Journal::class, 'journal_id');

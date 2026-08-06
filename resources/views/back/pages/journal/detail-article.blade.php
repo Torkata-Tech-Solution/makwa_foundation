@@ -42,7 +42,7 @@
                                 <th class="min-w-300px">Editor</th>
                                 <th class="min-w-300px">Reviewer</th>
                                 <th class="min-w-100px text-start">Status Submission</th>
-                                @if ($journal->author_fee != 0)
+                                @if (($issue->author_fee ?? $journal->author_fee) != 0)
                                     <th class="min-w-150px text-start ">Pembayaran</th>
                                 @endif
                                 <th class="min-w-250px text-center">Action</th>
@@ -113,7 +113,7 @@
                                                 class="badge badge-light-secondary fs-7 fw-bold">{{ $submission->status_label }}</span>
                                         @endif
                                     </td>
-                                    @if ($journal->author_fee != 0)
+                                    @if (($issue->author_fee ?? $journal->author_fee) != 0)
                                         @if ($submission->free_charge)
                                             <td class="text-start">
                                                 <span class="badge badge-light-primary fs-7 fw-bold">Free Charge</span>
@@ -250,7 +250,7 @@
                                 <a class="nav-link active" data-bs-toggle="tab"
                                     href="#kt_tab_pane_1_submission_{{ $submission->id }}">Informasi</a>
                             </li>
-                            @if ($journal->author_fee != 0)
+                            @if (($issue->author_fee ?? $journal->author_fee) != 0)
                                 <li class="nav-item">
                                     <a class="nav-link" data-bs-toggle="tab"
                                         href="#kt_tab_pane_2_submission_{{ $submission->id }}">History Pembayaran</a>
@@ -391,7 +391,7 @@
                             </div>
 
                             {{-- Tab 2: History Pembayaran --}}
-                            @if ($journal->author_fee != 0)
+                            @if (($issue->author_fee ?? $journal->author_fee) != 0)
                                 <div class="tab-pane fade" id="kt_tab_pane_2_submission_{{ $submission->id }}"
                                     role="tabpanel">
                                     @forelse ($submission->paymentInvoices as $invoice)
@@ -590,14 +590,14 @@
                         <!--end::Close-->
                     </div>
                     <div class="modal-body">
-                        @if ($journal->author_fee != 0)
+                        @if (($issue->author_fee ?? $journal->author_fee) != 0)
                             <div class="mb-10">
                                 <div class="mb-3">
                                     <label class="d-flex align-items-center fs-5 fw-semibold">
                                         <span class="required">Invoice</span>
                                     </label>
                                     <div class="fs-7 fw-semibold text-muted">
-                                        Tagihan 1 - 60% (@money($journal->author_fee * 0.6)) -
+                                        Tagihan 1 - 60% (@money(($issue->author_fee ?? $journal->author_fee) * 0.6)) -
                                         @php
                                             $tagihan1 = $submission->paymentInvoices
                                                 ->where('payment_percent', 60)
@@ -648,7 +648,7 @@
                                 </div>
                                 <div class="mb-3">
                                     <div class="fs-7 fw-semibold text-muted">
-                                        Tagihan 2 - 40% (@money($journal->author_fee * 0.4)) -
+                                        Tagihan 2 - 40% (@money(($issue->author_fee ?? $journal->author_fee) * 0.4)) -
                                         @php
                                             $tagihan2 = $submission->paymentInvoices
                                                 ->where('payment_percent', 40)
@@ -705,7 +705,7 @@
                                             });
                                             $tagihan3_amount = $tagihan3
                                                 ? $tagihan3->payment_amount
-                                                : $journal->author_fee;
+                                                : ($issue->author_fee ?? $journal->author_fee);
                                             $tagihan_custom = $submission->paymentInvoices->first(function ($invoice) {
                                                 return (int) $invoice->payment_percent === 100 && $invoice->is_custom;
                                             });

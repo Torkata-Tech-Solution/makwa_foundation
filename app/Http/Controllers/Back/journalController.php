@@ -99,7 +99,10 @@ class journalController extends Controller
             return abort(404);
         }
 
-        $journal->issues()->create($request->all());
+        $data = $request->all();
+        $data['author_fee'] = $journal->author_fee ?? 0;
+
+        $journal->issues()->create($data);
         Alert::success('Success', 'Issue has been created');
         return redirect()->back();
     }
@@ -599,7 +602,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 60,
-                'payment_amount' => ($issue->journal->author_fee * 0.6) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
+                'payment_amount' => (($issue->author_fee ?? $issue->journal->author_fee) * 0.6) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
@@ -694,7 +697,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 60,
-                'payment_amount' => ($issue->journal->author_fee * 0.6) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
+                'payment_amount' => (($issue->author_fee ?? $issue->journal->author_fee) * 0.6) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
@@ -782,7 +785,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 40,
-                'payment_amount' => ($issue->journal->author_fee * 0.4) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
+                'payment_amount' => (($issue->author_fee ?? $issue->journal->author_fee) * 0.4) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
@@ -872,7 +875,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 40,
-                'payment_amount' => ($issue->journal->author_fee * 0.4) + $newNumber,
+                'payment_amount' => (($issue->author_fee ?? $issue->journal->author_fee) * 0.4) + $newNumber,
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
@@ -959,7 +962,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 100,
-                'payment_amount' => ($issue->journal->author_fee) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
+                'payment_amount' => ($issue->author_fee ?? $issue->journal->author_fee) + $newNumber, // Tambahkan nomor urut ke jumlah untuk memastikan unik
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
@@ -1054,7 +1057,7 @@ class journalController extends Controller
             $invoice = PaymentInvoice::create([
                 'invoice_number' => $formattedNumber,
                 'payment_percent' => 100,
-                'payment_amount' => ($issue->journal->author_fee) + $newNumber,
+                'payment_amount' => ($issue->author_fee ?? $issue->journal->author_fee) + $newNumber,
                 'payment_due_date' => Carbon::now()->addDays(3),
                 'submission_id' => $submission->id,
             ]);
