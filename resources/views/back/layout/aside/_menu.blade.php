@@ -166,7 +166,16 @@
                 </div>
             </div>
             @php
-                $journal_all = App\Models\Journal::all();
+                $journal_all = App\Models\Journal::withCount([
+                    'waitingSubmissions as waiting_manuscript_submissions_count' => fn($q) => $q->where(
+                        'status',
+                        'waiting',
+                    ),
+                    'waitingSubmissions as under_review_manuscript_submissions_count' => fn($q) => $q->where(
+                        'status',
+                        'under_review',
+                    ),
+                ])->get();
             @endphp
 
 
@@ -184,6 +193,20 @@
                                 </i>
                             </span>
                             <span class="menu-title">{{ $journal->name }}</span>
+                            @if (
+                                ($journal->waiting_manuscript_submissions_count ?? 0) > 0 ||
+                                    ($journal->under_review_manuscript_submissions_count ?? 0) > 0)
+                                <span class="menu-badge">
+                                    @if (($journal->waiting_manuscript_submissions_count ?? 0) > 0)
+                                        <span class="badge badge-warning me-1" title="Waiting">
+                                            {{ $journal->waiting_manuscript_submissions_count }} </span>
+                                    @endif
+                                    @if (($journal->under_review_manuscript_submissions_count ?? 0) > 0)
+                                        <span class="badge badge-info" title="Under Review">
+                                            {{ $journal->under_review_manuscript_submissions_count }} </span>
+                                    @endif
+                                </span>
+                            @endif
                         </a>
                     </div>
                 @endcan
@@ -331,7 +354,7 @@
                 </div>
             </div>
 
-                <div data-kt-menu-trigger="click"
+            <div data-kt-menu-trigger="click"
                 class="menu-item menu-accordion @if (request()->routeIs('back.chatery-whatsapp.*')) here show @endif">
                 <span class="menu-link">
                     <span class="menu-icon">
