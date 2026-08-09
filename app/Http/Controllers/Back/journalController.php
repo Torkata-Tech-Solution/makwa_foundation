@@ -82,11 +82,14 @@ class journalController extends Controller
             'year' => 'required',
             'title' => 'required',
             'description' => 'nullable',
+            'author_fee' => 'nullable|numeric|min:0',
         ], [
             'volume.required' => 'Volume harus diisi',
             'number.required' => 'Number harus diisi',
             'year.required' => 'Year harus diisi',
             'title.required' => 'Title harus diisi',
+            'author_fee.numeric' => 'Author Fee harus berupa angka',
+            'author_fee.min' => 'Author Fee tidak boleh kurang dari 0',
         ]);
 
         if ($validator->fails()) {
@@ -100,8 +103,9 @@ class journalController extends Controller
         }
 
         $data = $request->all();
-        $data['author_fee'] = $journal->author_fee ?? 0;
-
+        if (!auth()->user()->hasRole('super-admin')) {
+            unset($data['author_fee']);
+        }
         $journal->issues()->create($data);
         Alert::success('Success', 'Issue has been created');
         return redirect()->back();
@@ -115,12 +119,15 @@ class journalController extends Controller
             'year' => 'required',
             'title' => 'required',
             'description' => 'nullable',
+            'author_fee' => 'nullable|numeric|min:0',
             'loa_template' => 'nullable|mimes:pptx,docx,doc,pdf|max:10240',
         ], [
             'volume.required' => 'Volume harus diisi',
             'number.required' => 'Number harus diisi',
             'year.required' => 'Year harus diisi',
             'title.required' => 'Title harus diisi',
+            'author_fee.numeric' => 'Author Fee harus berupa angka',
+            'author_fee.min' => 'Author Fee tidak boleh kurang dari 0',
             'loa_template.mimes' => 'File harus berupa pptx, docx, doc, pdf',
             'loa_template.max' => 'File tidak boleh lebih dari 10 MB',
         ]);
@@ -140,9 +147,12 @@ class journalController extends Controller
             return abort(404);
         }
 
-        $issue->update(
-            $request->except('loa_template')
-        );
+        $data = $request->except('loa_template');
+        if (!auth()->user()->hasRole('super-admin')) {
+            unset($data['author_fee']);
+        }
+
+        $issue->update($data);
         if ($request->hasFile('loa_template')) {
             $file = $request->file('loa_template');
             $filename = Str::random(10) . '.' . $file->getClientOriginalExtension();
