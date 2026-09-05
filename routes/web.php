@@ -160,6 +160,11 @@ Route::prefix('back')->name('back.')->middleware(['auth', '2fa'])->group(functio
 
         Route::get('/cashflow', [BackDashboardController::class, 'cashflow'])->name('cashflow');
         Route::get('/cashflow-stat', [BackDashboardController::class, 'cashflowStat'])->name('cashflow.stat');
+
+        Route::get('/journal', [BackDashboardController::class, 'journal'])->name('journal');
+        Route::get('/journal-stat', [BackDashboardController::class, 'journalStat'])->name('journal.stat');
+        Route::get('/journal-submissions', [BackDashboardController::class, 'journalSubmissions'])->name('journal.submissions');
+
     });
 
     Route::prefix('profile')->name('profile.')->group(function () {
