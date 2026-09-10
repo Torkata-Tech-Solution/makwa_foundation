@@ -59,15 +59,32 @@
 
         <p style="margin-top: -10px;">
         <table>
-            <tr style="line-height: 1;">
+            <tr style="line-height: 1.2; vertical-align: top;">
                 <td style="width: 180px;">Author</td>
-                <td style="width: 0px;">:</td>
-                <td>{{ $name }}</td>
+                <td style="width: 10px;">:</td>
+                <td>
+                    @if(isset($authors) && is_array($authors) && count($authors) > 0)
+                        {{ implode(', ', array_filter(array_column($authors, 'name'))) ?: ($authorsString ?? $name ?? '-') }}
+                    @else
+                        {{ $name ?? ($authorsString ?? '-') }}
+                    @endif
+                </td>
             </tr>
-            <tr style="line-height: 1;">
+            <tr style="line-height: 1.2; vertical-align: top;">
                 <td>Affiliation</td>
                 <td>:</td>
-                <td>{{ $affiliation }}</td>
+                <td>
+                    @if(isset($authors) && is_array($authors) && count($authors) > 0)
+                        @php
+                            $affiliations = array_values(array_unique(array_filter(array_map('trim', array_column($authors, 'affiliation')), function($item) {
+                                return !empty($item) && $item !== '-';
+                            })));
+                        @endphp
+                        {{ count($affiliations) > 0 ? implode('; ', $affiliations) : ($affiliation ?? '-') }}
+                    @else
+                        {{ $affiliation ?? '-' }}
+                    @endif
+                </td>
             </tr>
         </table>
         </p>
