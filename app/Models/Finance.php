@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Finance extends Model
 {
     protected $fillable = [
+        'journal_id',
         'name',
         'description',
         'type',
@@ -20,6 +21,11 @@ class Finance extends Model
         'updated_by',
     ];
 
+    public function journal()
+    {
+        return $this->belongsTo(Journal::class, 'journal_id');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
@@ -29,5 +35,4 @@ class Finance extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
-
 }

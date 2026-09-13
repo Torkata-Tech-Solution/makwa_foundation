@@ -370,7 +370,18 @@
             </div>
             <div class="card-body pt-0">
                 <div class="row mb-10">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label fs-6 fw-bold">Jurnal</label>
+                        <select class="form-select form-select-solid" data-control="select2"
+                            data-placeholder="Semua Jurnal & Umum" name="journal_id" id="journal_id">
+                            <option value="all">Semua Jurnal & Umum</option>
+                            <option value="general">Umum / Yayasan (Non-Jurnal)</option>
+                            @foreach ($journals as $journal)
+                                <option value="{{ $journal->id }}">{{ $journal->title ?? $journal->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label fs-6 fw-bold">Tipe</label>
                         <select class="form-select form-select-solid" data-control="select2"
                             data-placeholder="Select an option" name="type" id="type">
@@ -379,7 +390,7 @@
                             <option value="expense">Pengeluaran</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fs-6 fw-bold">Dari Tanggal</label>
                         <input type="date" name="date_start" class="form-control form-control-solid"
                             placeholder="Date Start" id="date_start"
@@ -391,7 +402,7 @@
                                 if (this.value > this.max) this.value = this.max;
                             " />
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label fs-6 fw-bold">Sampai Tanggal</label>
                         <input type="date" name="date_end" class="form-control form-control-solid"
                             placeholder="Date End" id="date_end"
@@ -470,6 +481,22 @@
                 <form action="{{ route('back.finance.cashflow.store') }}" method="post" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+                        <div class="mb-5">
+                            <label class="form-label">Jurnal Terkait</label>
+                            <select class="form-select" data-control="select2" data-dropdown-parent="#add_finance"
+                                data-placeholder="Pilih Jurnal (Opsional)" name="journal_id" id="add_journal_id">
+                                <option value="">-- Umum / Yayasan (Tidak Terkait Jurnal) --</option>
+                                @foreach ($journals as $journal)
+                                    <option value="{{ $journal->id }}" {{ old('journal_id') == $journal->id ? 'selected' : '' }}>
+                                        {{ $journal->title ?? $journal->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Pilih jurnal jika transaksi ini khusus untuk jurnal tertentu, atau biarkan kosong untuk transaksi umum/yayasan.</div>
+                            @error('journal_id')
+                                <small class="text-danger">{{ $message }}</small>
+                            @enderror
+                        </div>
                         <div class="mb-5">
                             <label class="form-label required">Nama Transaksi</label>
                             <input type="text" class="form-control" placeholder="Nama transaksi keuangan"
@@ -569,6 +596,7 @@
                 ajax: {
                     url: "{{ route('back.finance.cashflow.datatable') }}",
                     data: function(d) {
+                        d.journal_id = $('#journal_id').val();
                         d.type = $('#type').val();
                         d.date_start = $('#date_start').val();
                         d.date_end = $('#date_end').val();
@@ -631,8 +659,11 @@
                 $('#balance').text('Rp ' + summary.total_balance.toLocaleString());
                 $('#export_excel').attr('href',
                     "{{ route('back.finance.cashflow.export') }}?type=" +
-                    $('#type').val() + "&date_start=" + $('#date_start').val() + "&date_end=" +
+                    $('#type').val() + "&journal_id=" + $('#journal_id').val() + "&date_start=" + $('#date_start').val() + "&date_end=" +
                     $('#date_end').val());
+            });
+            $('#journal_id').on('change', function() {
+                table.ajax.reload();
             });
             $('#type').on('change', function() {
                 table.ajax.reload();

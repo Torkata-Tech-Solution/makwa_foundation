@@ -702,7 +702,7 @@ class FinanceController extends Controller
             'total_balance_now' => $balance,
             'total_distribution' => $finance_year_now ? ($income * ($finance_year_now->distribution_percentage / 100)) : 0,
             'total_distributtion_other' => $finance_year_now ? ($income * ((100 - $finance_year_now->distribution_percentage) / 100)) : 0,
-
+            'journals' => Journal::orderBy('title')->get(),
         ];
         // return response()->json($data);
         return view('back.pages.finance.cashflow', $data);
@@ -711,15 +711,30 @@ class FinanceController extends Controller
     public function cashflowDatatables(Request $request)
     {
         $type = $request->type ?? "all";
+        $journal_id = $request->journal_id ?? "all";
         $date_end = $request->date_end ?? now()->toDateString();
         $date_start = $request->date_start ?? now()->subMonth()->toDateString();
 
-        $finance = Finance::where('date', '>=', $date_start)
-            ->where('date', '<=', $date_end)
-            ->get()
+        $journals = Journal::orderBy('title')->get();
+
+        $financeQuery = Finance::with(['journal'])
+            ->where('date', '>=', $date_start)
+            ->where('date', '<=', $date_end);
+
+        if ($journal_id && $journal_id !== 'all') {
+            if ($journal_id === 'general') {
+                $financeQuery->whereNull('journal_id');
+            } else {
+                $financeQuery->where('journal_id', $journal_id);
+            }
+        }
+
+        $finance = $financeQuery->get()
             ->map(function ($item) {
                 return (object)[
                     'id' => $item->id,
+                    'journal_id' => $item->journal_id,
+                    'journal_name' => $item->journal ? ($item->journal->title ?? $item->journal->name) : 'Umum / Yayasan',
                     'name' => $item->name,
                     'description' => $item->description,
                     'type' => $item->type,
@@ -737,13 +752,27 @@ class FinanceController extends Controller
                 ];
             })->collect();
 
-        $billing = Payment::with(['paymentInvoice.submission'])
+        $billingQuery = Payment::with(['paymentInvoice.submission.issue.journal'])
             ->whereBetween('created_at', [$date_start, $date_end])
-            ->where('payment_status', 'accepted')
-            ->get()
+            ->where('payment_status', 'accepted');
+
+        if ($journal_id && $journal_id !== 'all') {
+            if ($journal_id === 'general') {
+                $billingQuery->whereRaw('1 = 0');
+            } else {
+                $billingQuery->whereHas('paymentInvoice.submission.issue.journal', function ($q) use ($journal_id) {
+                    $q->where('id', $journal_id);
+                });
+            }
+        }
+
+        $billing = $billingQuery->get()
             ->map(function ($item) {
+                $journal = $item->paymentInvoice?->submission?->issue?->journal;
                 return (object)[
                     'id' => null,
+                    'journal_id' => $journal?->id,
+                    'journal_name' => $journal ? ($journal->title ?? $journal->name) : 'Jurnal Tidak Diketahui',
                     'name' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/INVOICE-" . ($item->paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($item->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-'),
                     'description' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice') . "/INVOICE-" . ($item->paymentInvoice->submission->submission_id ?? '-') . "/MF/" . ($item->paymentInvoice->created_at->format('m') ?? '-') . "/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-') . ' Yang Telah Dibayarkan Oleh ' . ($item->name ?? 'Unknown Payer'),
                     'type' => 'income',
@@ -772,10 +801,16 @@ class FinanceController extends Controller
 
         return datatables()->of($data)
             ->addColumn('transaction', function ($row) {
-                return '<div class="d-flex flex-column">
+                $isGeneral = empty($row->journal_id);
+                $badgeClass = $isGeneral ? 'badge-light-dark' : 'badge-light-primary';
+                $icon = $isGeneral ? 'ki-home' : 'ki-book';
+                $journalBadge = '<span class="badge ' . $badgeClass . ' mb-1 w-fit"><i class="ki-duotone ' . $icon . ' fs-7 me-1"><span class="path1"></span><span class="path2"></span></i>' . e($row->journal_name) . '</span>';
+
+                return '<div class="d-flex flex-column align-items-start">
+                            ' . $journalBadge . '
                             <a href="#"
-                            class="text-gray-800 text-hover-primary mb-1">' . $row->name . '</a>
-                            <span class="text-muted">' . $row->description . '</span>
+                            class="text-gray-800 text-hover-primary mb-1 fw-bold">' . e($row->name) . '</a>
+                            <span class="text-muted fs-7">' . e($row->description) . '</span>
                         </div>';
             })
             ->addColumn('date', function ($row) {
@@ -845,8 +880,14 @@ class FinanceController extends Controller
                     </li>
                 </ul>';
             })
-            ->addColumn('action', function ($row) {
+            ->addColumn('action', function ($row) use ($journals) {
                 if ($row->editable) {
+                    $journalOptions = '<option value="" ' . (!$row->journal_id ? 'selected' : '') . '>-- Umum / Yayasan (Tidak Terkait Jurnal) --</option>';
+                    foreach ($journals as $j) {
+                        $selected = ($row->journal_id == $j->id) ? 'selected' : '';
+                        $journalOptions .= '<option value="' . $j->id . '" ' . $selected . '>' . e($j->title ?? $j->name) . '</option>';
+                    }
+
                     return ' <div class="d-flex justify-content-end">
                         <a href="#" class="btn btn-icon btn-light-warning me-3" data-bs-toggle="modal" data-bs-target="#edit_' . $row->id . '"><i class="fa-solid fa-pen-to-square fs-4"></i></a>
                         <a href="#" class="btn btn-icon btn-light-danger" data-bs-toggle="modal" data-bs-target="#delete_' . $row->id . '"><i class="fa-solid fa-trash fs-4"></i></a>
@@ -863,6 +904,13 @@ class FinanceController extends Controller
                                     ' . csrf_field() . '
                                     ' . method_field('PUT') . '
                                     <div class="modal-body">
+                                        <div class="mb-5">
+                                            <label for="journal_id_' . $row->id . '" class="form-label">Jurnal Terkait</label>
+                                            <select class="form-select" id="journal_id_' . $row->id . '" name="journal_id">
+                                                ' . $journalOptions . '
+                                            </select>
+                                            <small class="form-text text-muted">Pilih jurnal jika transaksi ini khusus untuk jurnal tertentu, atau biarkan jika untuk umum/yayasan.</small>
+                                        </div>
                                         <div class="mb-5">
                                             <label for="name_' . $row->id . '" class="form-label required">Nama Transaksi</label>
                                             <input type="text" class="form-control" id="name_' . $row->id . '" name="name" value="' . $row->name . '" required>
@@ -972,15 +1020,17 @@ class FinanceController extends Controller
     public function cashFlowExport(Request $request)
     {
         $type = $request->type;
+        $journal_id = $request->journal_id ?? 'all';
         $date_end = $request->date_end ?? now()->toDateString();
         $date_start = $request->date_start ?? now()->subMonth()->toDateString();
 
-        return Excel::download(new CashflowExport($date_start, $date_end, $type), 'cashflow_' . now()->format('Y_m_d') . '.xlsx');
+        return Excel::download(new CashflowExport($date_start, $date_end, $type, $journal_id), 'cashflow_' . now()->format('Y_m_d') . '.xlsx');
     }
 
     public function CashflowStore(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'journal_id' => 'nullable|exists:journals,id',
             'name' => 'required|string|max:1000',
             'description' => 'nullable|string|max:1000',
             'type' => 'required|in:income,expense',
@@ -998,6 +1048,7 @@ class FinanceController extends Controller
         }
 
         $finance = new Finance();
+        $finance->journal_id = $request->journal_id ?: null;
         $finance->name = $request->name;
         $finance->description = $request->description;
         $finance->type = $request->type;
@@ -1040,6 +1091,7 @@ class FinanceController extends Controller
     public function cashflowUpdate(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'journal_id' => 'nullable|exists:journals,id',
             'name' => 'required|string|max:1000',
             'description' => 'nullable|string|max:1000',
             'type' => 'required|in:income,expense',
@@ -1062,6 +1114,7 @@ class FinanceController extends Controller
             return redirect()->back();
         }
 
+        $finance->journal_id = $request->journal_id ?: null;
         $finance->name = $request->name;
         $finance->description = $request->description;
         $finance->type = $request->type;

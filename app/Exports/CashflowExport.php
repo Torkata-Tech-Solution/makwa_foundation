@@ -22,22 +22,36 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
     protected $date_start;
     protected $date_end;
     protected $type;
+    protected $journal_id;
 
-    public function __construct($date_start, $date_end, $type = 'all')
+    public function __construct($date_start, $date_end, $type = 'all', $journal_id = 'all')
     {
         $this->date_start = $date_start;
         $this->date_end = $date_end;
         $this->type = $type;
+        $this->journal_id = $journal_id;
     }
     public function collection()
     {
         $counter = 1;
-        $finance = Finance::where('date', '>=', $this->date_start)
-            ->where('date', '<=', $this->date_end)
-            ->get()
+        $financeQuery = Finance::with(['journal'])
+            ->where('date', '>=', $this->date_start)
+            ->where('date', '<=', $this->date_end);
+
+        if ($this->journal_id && $this->journal_id !== 'all') {
+            if ($this->journal_id === 'general') {
+                $financeQuery->whereNull('journal_id');
+            } else {
+                $financeQuery->where('journal_id', $this->journal_id);
+            }
+        }
+
+        $finance = $financeQuery->get()
             ->map(function ($item) {
                 return (object)[
                     'id' => $item->id,
+                    'journal_id' => $item->journal_id,
+                    'journal_name' => $item->journal ? ($item->journal->title ?? $item->journal->name) : 'Umum / Yayasan',
                     'name' => $item->name,
                     'description' => $item->description,
                     'type' => $item->type,
@@ -55,13 +69,27 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
                 ];
             })->collect();
 
-        $billing = Payment::with(['paymentInvoice'])
+        $billingQuery = Payment::with(['paymentInvoice.submission.issue.journal'])
             ->whereBetween('created_at', [$this->date_start, $this->date_end])
-            ->where('payment_status', 'accepted')
-            ->get()
+            ->where('payment_status', 'accepted');
+
+        if ($this->journal_id && $this->journal_id !== 'all') {
+            if ($this->journal_id === 'general') {
+                $billingQuery->whereRaw('1 = 0');
+            } else {
+                $billingQuery->whereHas('paymentInvoice.submission.issue.journal', function ($q) {
+                    $q->where('id', $this->journal_id);
+                });
+            }
+        }
+
+        $billing = $billingQuery->get()
             ->map(function ($item) {
+                $journal = $item->paymentInvoice?->submission?->issue?->journal;
                 return (object)[
                     'id' => null,
+                    'journal_id' => $journal?->id,
+                    'journal_name' => $journal ? ($journal->title ?? $journal->name) : 'Jurnal Tidak Diketahui',
                     'name' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice')  . "/JRNL/UINSMDD/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-'),
                     'description' => 'Pembayaran Invoice ' . ($item->paymentInvoice->invoice_number ?? 'Unknown Invoice') . "/JRNL/UINSMDD/" . ($item->paymentInvoice->created_at ? $item->paymentInvoice->created_at->format('Y') : '-') . ' Yang Telah Dibayarkan Oleh ' . ($item->name ?? 'Unknown Payer'),
                     'type' => 'income',
@@ -88,6 +116,7 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
         return $data->map(function ($item) use (&$counter) {
             return (object)[
                 'No' => $counter++,
+                'journal' => $item->journal_name,
                 'name' => $item->name,
                 'description' => $item->description,
                 'type' => $item->type,
@@ -107,6 +136,7 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
     {
         return [
             'No',
+            'Jurnal',
             'Nama',
             'Deskripsi',
             'Tipe',
@@ -151,7 +181,7 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // Tambahkan warna latar belakang untuk heading di baris ke-4
-                $sheet->getStyle('A4:L4')->applyFromArray([
+                $sheet->getStyle('A4:M4')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'color' => ['rgb' => 'FFFF00'],  // Warna kuning
@@ -159,7 +189,7 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
                 ]);
 
                 // Menambahkan border untuk heading
-                $sheet->getStyle('A4:L4')->applyFromArray([
+                $sheet->getStyle('A4:M4')->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -170,7 +200,7 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
 
                 // Menambahkan border untuk data (mulai dari baris 5 sampai baris terakhir)
                 $rowCount = $sheet->getHighestRow();
-                $sheet->getStyle('A5:L' . $rowCount)->applyFromArray([
+                $sheet->getStyle('A5:M' . $rowCount)->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -179,28 +209,28 @@ class CashflowExport implements FromCollection, WithHeadings, WithStyles, WithEv
                     ],
                 ]);
 
-                //jika row 5 income maka warna hijau, jika row 5 expense maka warna merah
-                $conditionalStyles = $sheet->getStyle('D5:D' . $rowCount)->getConditionalStyles();
+                //jika tipe income maka warna hijau, jika expense maka warna merah
+                $conditionalStyles = $sheet->getStyle('E5:E' . $rowCount)->getConditionalStyles();
 
                 $incomeCondition = new \PhpOffice\PhpSpreadsheet\Style\Conditional();
                 $incomeCondition->setConditionType(\PhpOffice\PhpSpreadsheet\Style\Conditional::CONDITION_EXPRESSION);
                 $incomeCondition->setOperatorType(\PhpOffice\PhpSpreadsheet\Style\Conditional::OPERATOR_NONE);
-                $incomeCondition->setConditions(['D5="income"']);
+                $incomeCondition->setConditions(['E5="income"']);
                 $incomeCondition->getStyle()->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('00FF00');
 
                 $expenseCondition = new \PhpOffice\PhpSpreadsheet\Style\Conditional();
                 $expenseCondition->setConditionType(\PhpOffice\PhpSpreadsheet\Style\Conditional::CONDITION_EXPRESSION);
                 $expenseCondition->setOperatorType(\PhpOffice\PhpSpreadsheet\Style\Conditional::OPERATOR_NONE);
-                $expenseCondition->setConditions(['D5="expense"']);
+                $expenseCondition->setConditions(['E5="expense"']);
                 $expenseCondition->getStyle()->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('FF0000');
 
                 $conditionalStyles[] = $incomeCondition;
                 $conditionalStyles[] = $expenseCondition;
 
-                $sheet->getStyle('D5:E' . $rowCount)->setConditionalStyles($conditionalStyles);
+                $sheet->getStyle('E5:E' . $rowCount)->setConditionalStyles($conditionalStyles);
 
                 // Auto-fit kolom (menyesuaikan lebar kolom dengan konten)
-                foreach (range('A', 'L') as $column) {
+                foreach (range('A', 'M') as $column) {
                     $sheet->getColumnDimension($column)->setAutoSize(true);
                 }
             },
