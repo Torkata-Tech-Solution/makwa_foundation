@@ -50,6 +50,23 @@
                                 <small class="text-danger">{{ $message }}</small>
                             @enderror
                         </div>
+                        @role('super-admin')
+                            <div class="col-md-12 mt-5">
+                                <label class="form-label">Maksimal Artikel</label>
+                                <input type="number" name="max_articles" class="form-control" placeholder="Kosongkan jika tidak ada batas (unlimited)"
+                                    value="{{ old('max_articles', $issue->max_articles) }}" min="1" />
+                                <div class="form-text text-muted">Jumlah maksimal artikel untuk issue ini. Kosongkan jika tidak ada batas (unlimited).</div>
+                                @error('max_articles')
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        @else
+                            <div class="col-md-12 mt-5">
+                                <label class="form-label">Maksimal Artikel</label>
+                                <input type="text" class="form-control" value="{{ is_null($issue->max_articles) ? 'Tidak Ada Batas' : $issue->max_articles }}" disabled readonly />
+                                <div class="form-text text-muted">Jumlah maksimal artikel untuk issue ini (Hanya Admin yang dapat mengubah).</div>
+                            </div>
+                        @endrole
                          @role('super-admin')
                             <div class="col-md-12 mt-5">
                                 <label class="form-label">Biaya Publikasi (APC)</label>

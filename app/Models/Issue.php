@@ -28,6 +28,11 @@ class Issue extends Model
                     $issue->author_fee = $journal->author_fee ?? 0;
                 }
             }
+            if (!array_key_exists('max_articles', $issue->getAttributes())) {
+                $issue->max_articles = 10;
+            } elseif ($issue->max_articles === '') {
+                $issue->max_articles = null;
+            }
         });
     }
 

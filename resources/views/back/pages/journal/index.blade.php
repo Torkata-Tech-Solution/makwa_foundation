@@ -85,6 +85,7 @@
                                     <span class="fw-bold">
                                         {{ $issue->submissions->count() }}
                                     </span>
+                                    <span class="text-muted fs-7" title="{{ is_null($issue->max_articles) ? 'Tanpa Batas' : 'Maksimal ' . $issue->max_articles . ' Artikel' }}">/ {{ is_null($issue->max_articles) ? '∞' : $issue->max_articles }}</span>
                                 </td>
                                 <td class="text-end pe-0">
                                     <span class="fw-bold">
