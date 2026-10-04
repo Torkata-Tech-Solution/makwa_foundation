@@ -336,7 +336,6 @@ class DashboardController extends Controller
 
     protected array $allowedDashboardJournalRoles = [
         'super-admin',
-        'keuangan',
         'admin-ejournal',
         'admin-proceeding',
         'admin-student-research-hub',
@@ -345,31 +344,152 @@ class DashboardController extends Controller
         'editor-student-research-hub',
     ];
 
+    protected array $dashboardScopes = [
+        'all' => [
+            'id' => 'all',
+            'name' => 'Semua Jurnal',
+            'label' => 'Semua Jurnal (Keseluruhan)',
+            'type' => null,
+        ],
+
+    ];
+
+    private function canUserAccessScopeType($user, ?string $type): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole('super-admin')) {
+            return true;
+        }
+
+        if ($type === null) {
+            return $user->hasAnyRole($this->allowedDashboardJournalRoles);
+        }
+
+        return match ($type) {
+            'journal' => $user->hasRole('admin-ejournal') || $user->hasRole('editor'),
+            'proceeding' => $user->hasRole('admin-proceeding') || $user->hasRole('editor-proceeding'),
+            'student_research_hub' => $user->hasRole('admin-student-research-hub') || $user->hasRole('editor-student-research-hub'),
+            default => false,
+        };
+    }
+
+    private function getAccessibleScopes($user, $accessibleJournals): array
+    {
+        $scopes = [];
+        $isSuperAdmin = $user->hasRole('super-admin');
+
+        foreach ($this->dashboardScopes as $key => $scopeDef) {
+            $type = $scopeDef['type'];
+            if ($isSuperAdmin) {
+                $scopes[$key] = $scopeDef;
+            } elseif ($type === null) {
+                if ($accessibleJournals->isNotEmpty()) {
+                    $scopes[$key] = $scopeDef;
+                }
+            } else {
+                if ($this->canUserAccessScopeType($user, $type) && $accessibleJournals->where('type', $type)->isNotEmpty()) {
+                    $scopes[$key] = $scopeDef;
+                }
+            }
+        }
+
+        return $scopes;
+    }
+
+    private function resolveSelectedJournals($user, ?string $journalId, $accessibleJournals): array
+    {
+        if (array_key_exists($journalId, $this->dashboardScopes)) {
+            $scopeDef = $this->dashboardScopes[$journalId];
+            $type = $scopeDef['type'];
+
+            if ($type !== null && !$user->hasRole('super-admin') && !$this->canUserAccessScopeType($user, $type) && $accessibleJournals->where('type', $type)->isEmpty()) {
+                return [
+                    'authorized' => false,
+                    'error_code' => 403,
+                    'message' => 'Anda tidak memiliki akses ke cakupan jurnal ini',
+                ];
+            }
+
+            $selectedJournals = ($type === null)
+                ? $accessibleJournals
+                : $accessibleJournals->where('type', $type)->values();
+
+            if ($selectedJournals->isEmpty() && !$user->hasRole('super-admin')) {
+                return [
+                    'authorized' => false,
+                    'error_code' => 403,
+                    'message' => 'Anda tidak memiliki akses ke jurnal dalam cakupan ini',
+                ];
+            }
+
+            return [
+                'authorized' => true,
+                'is_scope' => true,
+                'scope_id' => $journalId,
+                'scope_name' => $scopeDef['name'],
+                'journal' => null,
+                'journals' => $selectedJournals,
+            ];
+        }
+
+        if ($journalId) {
+            $journal = Journal::find($journalId);
+        } else {
+            $journal = null;
+        }
+
+        if (!$journal) {
+            return [
+                'authorized' => false,
+                'error_code' => 404,
+                'message' => 'Jurnal tidak ditemukan atau Anda belum memiliki jurnal yang ditugaskan',
+            ];
+        }
+
+        if (!$this->canUserAccessJournal($user, $journal)) {
+            return [
+                'authorized' => false,
+                'error_code' => 403,
+                'message' => 'Anda tidak memiliki akses ke jurnal ini',
+            ];
+        }
+
+        return [
+            'authorized' => true,
+            'is_scope' => false,
+            'scope_id' => null,
+            'scope_name' => null,
+            'journal' => $journal,
+            'journals' => collect([$journal]),
+        ];
+    }
+
     private function canUserAccessJournal($user, Journal $journal): bool
     {
         if (!$user || !$user->hasAnyRole($this->allowedDashboardJournalRoles)) {
             return false;
         }
 
-        // super-admin and keuangan can open everything across all types
-        if ($user->hasRole('super-admin') || $user->hasRole('keuangan')) {
+        // super-admin can open everything across all types
+        if ($user->hasRole('super-admin')) {
             return true;
         }
 
-        $type = $journal->type ?? 'journal';
-
         // admin-ejournal can open all journals, but only for type 'journal'
-        if ($user->hasRole('admin-ejournal') && $type === 'journal') {
+        if ($user->hasRole('admin-ejournal') && $journal->type === 'journal') {
             return true;
         }
 
         // admin-proceeding can open all journals, but only for type 'proceeding'
-        if ($user->hasRole('admin-proceeding') && $type === 'proceeding') {
+        if ($user->hasRole('admin-proceeding') && $journal->type === 'proceeding') {
             return true;
         }
 
         // admin-student-research-hub can open all journals, but only for type 'student_research_hub'
-        if ($user->hasRole('admin-student-research-hub') && $type === 'student_research_hub') {
+        if ($user->hasRole('admin-student-research-hub') && $journal->type === 'student_research_hub') {
             return true;
         }
 
@@ -383,7 +503,7 @@ class DashboardController extends Controller
         return false;
     }
 
-    public function journal(Request $request)
+      public function journal(Request $request)
     {
         $user = Auth::user();
 
@@ -401,6 +521,8 @@ class DashboardController extends Controller
             })
             ->values();
 
+        $accessibleScopes = $this->getAccessibleScopes($user, $journals);
+
         // Group journals by publication type
         $typeLabels = [
             'journal' => 'Jurnal / E-Journal',
@@ -409,26 +531,57 @@ class DashboardController extends Controller
         ];
 
         $groupedJournals = $journals->groupBy(function ($item) use ($typeLabels) {
-            $type = $item->type ?? 'journal';
-            return $typeLabels[$type] ?? ucfirst(str_replace('_', ' ', $type));
+            return $typeLabels[$item->type] ?? ucfirst(str_replace('_', ' ', $item->type));
         });
 
-        // Determine initially selected journal
+        // Determine initially selected journal or scope
         $selectedJournalId = $request->query('journal_id');
-        if (!$selectedJournalId || !$journals->contains('id', $selectedJournalId)) {
+        $isScope = array_key_exists($selectedJournalId, $accessibleScopes);
+
+        if (!$selectedJournalId || (!$journals->contains('id', $selectedJournalId) && !$isScope)) {
             $matchingControlPanelJournal = $journals->firstWhere('type', $controlPanel);
             $selectedJournalId = $matchingControlPanelJournal ? $matchingControlPanelJournal->id : $journals->first()?->id;
+            $isScope = false;
         }
 
         $selectedIssueId = $request->query('issue_id');
-        $selectedJournal = $journals->firstWhere('id', $selectedJournalId);
-        $initialIssues = $selectedJournal
-            ? Issue::where('journal_id', $selectedJournal->id)
+        $selectedYear = $request->query('year');
+
+        $initialIssues = collect();
+        $initialYears = collect();
+
+        if ($isScope) {
+            $scopeJournals = match ($selectedJournalId) {
+                'all' => $journals,
+                default => $journals,
+            };
+            $scopeJournalIds = $scopeJournals->pluck('id')->all();
+
+            $initialYears = Issue::whereIn('journal_id', $scopeJournalIds)
+                ->whereNotNull('year')
+                ->where('year', '!=', '')
+                ->distinct()
+                ->orderBy('year', 'desc')
+                ->pluck('year');
+        } elseif ($selectedJournalId) {
+            $initialYears = Issue::where('journal_id', $selectedJournalId)
+                ->whereNotNull('year')
+                ->where('year', '!=', '')
+                ->distinct()
+                ->orderBy('year', 'desc')
+                ->pluck('year');
+
+            $issuesQuery = Issue::where('journal_id', $selectedJournalId)
                 ->orderBy('year', 'desc')
                 ->orderBy('volume', 'desc')
-                ->orderBy('number', 'desc')
-                ->get()
-            : collect();
+                ->orderBy('number', 'desc');
+
+            if ($selectedYear && $selectedYear !== 'all') {
+                $issuesQuery->where('year', $selectedYear);
+            }
+
+            $initialIssues = $issuesQuery->get();
+        }
 
         $data = [
             'title' => 'Dashboard Jurnal',
@@ -444,9 +597,13 @@ class DashboardController extends Controller
             ],
             'journals' => $journals,
             'grouped_journals' => $groupedJournals,
+            'accessible_scopes' => $accessibleScopes,
             'selected_journal_id' => $selectedJournalId,
-            'selected_issue_id' => $selectedIssueId,
+            'is_scope' => $isScope,
             'initial_issues' => $initialIssues,
+            'selected_issue_id' => $selectedIssueId,
+            'initial_years' => $initialYears,
+            'selected_year' => $selectedYear,
             'control_panel' => $controlPanel,
         ];
 
@@ -468,74 +625,76 @@ class DashboardController extends Controller
             $controlPanel = $request->cookie('control_panel', 'journal');
             $journalId = $request->get('journal_id');
             $issueId = $request->get('issue_id');
+            $filterYear = $request->get('year');
 
-            if ($journalId) {
-                $journal = Journal::find($journalId);
-            } else {
-                $journals = Journal::orderBy('name')->get();
-                $journal = $journals->firstWhere('type', $controlPanel);
-                if (!$journal || !$this->canUserAccessJournal($user, $journal)) {
-                    $journal = $journals->first(fn($j) => $this->canUserAccessJournal($user, $j));
-                }
+            // Get journals accessible to this user based on their role and permissions
+            $journals = Journal::orderBy('name')
+                ->get()
+                ->filter(function ($journal) use ($user) {
+                    return $this->canUserAccessJournal($user, $journal);
+                })
+                ->values();
+
+            if (!$journalId) {
+                $matchingControlPanelJournal = $journals->firstWhere('type', $controlPanel);
+                $journalId = $matchingControlPanelJournal ? $matchingControlPanelJournal->id : $journals->first()?->id;
             }
 
-            if (!$journal) {
+            $resolved = $this->resolveSelectedJournals($user, (string)$journalId, $journals);
+            if (!$resolved['authorized']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jurnal tidak ditemukan atau Anda belum memiliki jurnal yang ditugaskan',
-                ], 404);
+                    'message' => $resolved['message'],
+                ], $resolved['error_code']);
             }
 
-            // Check authorization specifically for this journal
-            if (!$this->canUserAccessJournal($user, $journal)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak memiliki akses ke jurnal ini',
-                ], 403);
-            }
+            $isScope = $resolved['is_scope'];
+            $selectedJournals = $resolved['journals'];
+            $selectedJournalIds = $selectedJournals->pluck('id')->all();
+            $journalsById = $selectedJournals->keyBy('id');
+            $journal = $resolved['journal'];
 
-            // Retrieve all issues for options and count
-            $allIssues = Issue::where('journal_id', $journal->id)
+            // Retrieve all available years of these journals for the year filter options
+            $availableYears = Issue::whereIn('journal_id', $selectedJournalIds)
+                ->whereNotNull('year')
+                ->where('year', '!=', '')
+                ->distinct()
+                ->orderBy('year', 'desc')
+                ->pluck('year')
+                ->values();
+
+            // Retrieve all issues of these journals for filter options & count
+            $allIssues = Issue::whereIn('journal_id', $selectedJournalIds)
                 ->orderBy('year', 'desc')
                 ->orderBy('volume', 'desc')
                 ->orderBy('number', 'desc')
                 ->get();
 
-            $issuesOptions = $allIssues->map(function ($iss) {
-                $titleSuffix = (!empty($iss->title) && $iss->title !== '-') ? ' - ' . Str::limit($iss->title, 25) : '';
-                return [
-                    'id' => $iss->id,
-                    'label' => 'Vol. ' . $iss->volume . ' No. ' . $iss->number . ' (' . ($iss->year ?? '-') . ')' . $titleSuffix,
-                ];
-            })->values();
-
-            // Check if filtering by specific issue
             $selectedIssue = null;
-            $isIssueFiltered = false;
-
-            if ($issueId && $issueId !== 'all') {
+            if (!$isScope && !empty($issueId) && $issueId !== 'all') {
                 $selectedIssue = $allIssues->firstWhere('id', $issueId);
-                if ($selectedIssue) {
-                    $isIssueFiltered = true;
-                    $issues = Issue::where('id', $selectedIssue->id)
-                        ->with(['submissions.paymentInvoices.payments'])
-                        ->get();
-                } else {
-                    $issues = Issue::where('journal_id', $journal->id)
-                        ->with(['submissions.paymentInvoices.payments'])
-                        ->orderBy('year', 'asc')
-                        ->orderBy('volume', 'asc')
-                        ->orderBy('number', 'asc')
-                        ->get();
+                if (!$selectedIssue) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Issue tidak ditemukan pada jurnal ini',
+                    ], 404);
                 }
-            } else {
-                $issues = Issue::where('journal_id', $journal->id)
-                    ->with(['submissions.paymentInvoices.payments'])
-                    ->orderBy('year', 'asc')
-                    ->orderBy('volume', 'asc')
-                    ->orderBy('number', 'asc')
-                    ->get();
             }
+
+            // Retrieve issues with submissions, payment invoices, and payments
+            $issuesQuery = Issue::whereIn('journal_id', $selectedJournalIds)
+                ->with(['submissions.paymentInvoices.payments'])
+                ->orderBy('year', 'asc')
+                ->orderBy('volume', 'asc')
+                ->orderBy('number', 'asc');
+
+            if ($selectedIssue) {
+                $issuesQuery->where('id', $selectedIssue->id);
+            } elseif (!empty($filterYear) && $filterYear !== 'all') {
+                $issuesQuery->where('year', $filterYear);
+            }
+
+            $issues = $issuesQuery->get();
 
             $totalSubmissions = 0;
             $publishedCount = 0;
@@ -558,10 +717,22 @@ class DashboardController extends Controller
             $issueChartPublished = [];
             $issueChartUnpublished = [];
 
+            $journalChartData = [];
+            if ($isScope) {
+                foreach ($selectedJournals as $j) {
+                    $journalChartData[$j->id] = [
+                        'name' => Str::limit($j->name, 25),
+                        'published' => 0,
+                        'unpublished' => 0,
+                    ];
+                }
+            }
+
             $yearData = [];
 
             foreach ($issues as $issue) {
-                $issueFee = (int)($issue->author_fee ?? ($journal->author_fee ?? 0));
+                $issueJournal = $journalsById[$issue->journal_id] ?? ($journal ?: Journal::find($issue->journal_id));
+                $issueFee = $issue->author_fee ?? ($issueJournal?->author_fee ?? 0);
                 $issueArticlesCount = $issue->submissions->count();
                 $issuePublished = 0;
                 $issueUnpublished = 0;
@@ -574,10 +745,8 @@ class DashboardController extends Controller
                 foreach ($issue->submissions as $submission) {
                     $totalSubmissions++;
 
-                    // Published status check
-                    $isPublished = ($submission->status == 3)
-                        || !empty($submission->urlPublished)
-                        || Str::contains(strtolower($submission->status_label ?? ''), 'publish');
+                    // Published status check: hanya status == '3' yang publish, selain itu belum publish
+                    $isPublished = ($submission->status == '3');
 
                     if ($isPublished) {
                         $publishedCount++;
@@ -629,23 +798,34 @@ class DashboardController extends Controller
                     }
                 }
 
-                $year = $issue->year ?: ($issue->created_at ? $issue->created_at->format('Y') : 'Unknown');
-                if (!isset($yearData[$year])) {
-                    $yearData[$year] = [
+                $issueYear = $issue->year ?: ($issue->created_at ? $issue->created_at->format('Y') : 'Unknown');
+                if (!isset($yearData[$issueYear])) {
+                    $yearData[$issueYear] = [
                         'published' => 0,
                         'unpublished' => 0,
                     ];
                 }
-                $yearData[$year]['published'] += $issuePublished;
-                $yearData[$year]['unpublished'] += $issueUnpublished;
+                $yearData[$issueYear]['published'] += $issuePublished;
+                $yearData[$issueYear]['unpublished'] += $issueUnpublished;
 
                 $issueLabel = 'Vol. ' . $issue->volume . ' No. ' . $issue->number . ($issue->year ? ' (' . $issue->year . ')' : '');
-                $issueChartCategories[] = $issueLabel;
-                $issueChartPublished[] = $issuePublished;
-                $issueChartUnpublished[] = $issueUnpublished;
+
+                if ($isScope) {
+                    if (isset($journalChartData[$issue->journal_id])) {
+                        $journalChartData[$issue->journal_id]['published'] += $issuePublished;
+                        $journalChartData[$issue->journal_id]['unpublished'] += $issueUnpublished;
+                    }
+                } else {
+                    $issueChartCategories[] = $issueLabel;
+                    $issueChartPublished[] = $issuePublished;
+                    $issueChartUnpublished[] = $issueUnpublished;
+                }
 
                 $issuesTableData[] = [
                     'id' => $issue->id,
+                    'journal_id' => $issue->journal_id,
+                    'journal_name' => $issueJournal?->name ?? '-',
+                    'journal_url_path' => $issueJournal?->url_path ?? '',
                     'volume' => $issue->volume,
                     'number' => $issue->number,
                     'year' => $issue->year,
@@ -660,12 +840,53 @@ class DashboardController extends Controller
                     'belum_bayar_count' => $issueBelumBayar,
                     'free_count' => $issueFree,
                     'total_income' => (int)$issueIncome,
-                    'action_url' => route('back.journal.article.index', [$journal->url_path, $issue->id]),
+                    'action_url' => $issueJournal ? route('back.journal.article.index', [$issueJournal->url_path, $issue->id]) : '#',
                 ];
             }
 
-            // Waiting submissions for this journal
-            $waitingSubmissionsQuery = WaitingSubmission::where('target_journal_id', $journal->id);
+            $journalsTableData = [];
+            if ($isScope) {
+                $issuesByJournal = collect($issuesTableData)->groupBy('journal_id');
+
+                foreach ($selectedJournals as $j) {
+                    $jIssues = $issuesByJournal->get($j->id, collect())->values()->all();
+
+                    $journalsTableData[] = [
+                        'journal_id' => $j->id,
+                        'journal_name' => $j->name,
+                        'journal_title' => $j->title,
+                        'journal_url_path' => $j->url_path,
+                        'journal_type' => $j->type,
+                        'journal_author_fee' => (int)($j->author_fee ?? 0),
+                        'total_issues' => count($jIssues),
+                        'total_articles' => (int)array_sum(array_column($jIssues, 'total_articles')),
+                        'published_count' => (int)array_sum(array_column($jIssues, 'published_count')),
+                        'unpublished_count' => (int)array_sum(array_column($jIssues, 'unpublished_count')),
+                        'lunas_count' => (int)array_sum(array_column($jIssues, 'lunas_count')),
+                        'belum_lunas_count' => (int)array_sum(array_column($jIssues, 'belum_lunas_count')),
+                        'belum_bayar_count' => (int)array_sum(array_column($jIssues, 'belum_bayar_count')),
+                        'free_count' => (int)array_sum(array_column($jIssues, 'free_count')),
+                        'total_income' => (int)array_sum(array_column($jIssues, 'total_income')),
+                        'issues' => array_reverse($jIssues),
+                    ];
+                }
+            }
+
+            if ($isScope) {
+                $issueChartCategories = array_column(array_values($journalChartData), 'name');
+                $issueChartPublished = array_column(array_values($journalChartData), 'published');
+                $issueChartUnpublished = array_column(array_values($journalChartData), 'unpublished');
+                $issueChartMode = 'by_journal';
+                $issueChartTitle = 'Statistik Artikel Publish vs Belum Publish per Jurnal';
+                $issueChartDesc = 'Perbandingan jumlah artikel terbit dan dalam proses per jurnal';
+            } else {
+                $issueChartMode = 'by_issue';
+                $issueChartTitle = 'Statistik Artikel Publish vs Belum Publish per Edisi';
+                $issueChartDesc = 'Perbandingan jumlah artikel terbit dan dalam proses per edisi/issue';
+            }
+
+            // Waiting submissions for selected journals
+            $waitingSubmissionsQuery = WaitingSubmission::whereIn('target_journal_id', $selectedJournalIds);
             $totalWaiting = (clone $waitingSubmissionsQuery)->count();
             $waitingWaiting = (clone $waitingSubmissionsQuery)->where('status', 'waiting')->count();
             $waitingUnderReview = (clone $waitingSubmissionsQuery)->where('status', 'under_review')->count();
@@ -682,30 +903,70 @@ class DashboardController extends Controller
             $yearPublishedSeries = array_column(array_values($yearData), 'published');
             $yearUnpublishedSeries = array_column(array_values($yearData), 'unpublished');
 
-            $currentIssueAuthorFee = $isIssueFiltered && $selectedIssue
-                ? (int)($selectedIssue->author_fee ?? ($journal->author_fee ?? 0))
-                : (int)($journal->author_fee ?? 0);
+            $issuesOptions = $isScope ? [] : $allIssues->map(function ($iss) {
+                $label = 'Vol. ' . $iss->volume . ' No. ' . $iss->number . ($iss->year ? ' (' . $iss->year . ')' : '');
+                if (!empty($iss->title) && $iss->title !== '-') {
+                    $label .= ' - ' . Str::limit($iss->title, 40);
+                }
+                return [
+                    'id' => $iss->id,
+                    'label' => $label,
+                    'volume' => $iss->volume,
+                    'number' => $iss->number,
+                    'year' => $iss->year,
+                    'title' => $iss->title ?: '-',
+                    'author_fee' => (int)($iss->author_fee ?? 0),
+                ];
+            })->values();
 
-            $selectedIssueData = $selectedIssue ? [
-                'id' => $selectedIssue->id,
-                'label' => 'Vol. ' . $selectedIssue->volume . ' No. ' . $selectedIssue->number . ($selectedIssue->year ? ' (' . $selectedIssue->year . ')' : ''),
-            ] : null;
-
-            return response()->json([
-                'success' => true,
-                'journal' => [
+            if ($isScope) {
+                $journalPayload = [
+                    'id' => $resolved['scope_id'],
+                    'name' => $resolved['scope_name'],
+                    'title' => $resolved['scope_name'],
+                    'url_path' => null,
+                    'is_scope' => true,
+                    'scope_id' => $resolved['scope_id'],
+                    'total_journals' => $selectedJournals->count(),
+                    'author_fee' => 0,
+                    'journal_author_fee' => 0,
+                    'total_issues' => $allIssues->count(),
+                    'filtered_issues_count' => $issues->count(),
+                    'selected_year' => (!empty($filterYear) && $filterYear !== 'all') ? $filterYear : null,
+                    'selected_issue' => null,
+                ];
+            } else {
+                $journalPayload = [
                     'id' => $journal->id,
                     'name' => $journal->name,
                     'title' => $journal->title,
                     'url_path' => $journal->url_path,
-                    'author_fee' => $currentIssueAuthorFee,
+                    'is_scope' => false,
+                    'scope_id' => null,
+                    'total_journals' => 1,
+                    'author_fee' => (int)($selectedIssue ? ($selectedIssue->author_fee ?? ($journal->author_fee ?? 0)) : ($journal->author_fee ?? 0)),
                     'journal_author_fee' => (int)($journal->author_fee ?? 0),
                     'total_issues' => $allIssues->count(),
                     'filtered_issues_count' => $issues->count(),
-                    'selected_issue' => $selectedIssueData,
-                ],
+                    'selected_year' => (!empty($filterYear) && $filterYear !== 'all') ? $filterYear : null,
+                    'selected_issue' => $selectedIssue ? [
+                        'id' => $selectedIssue->id,
+                        'label' => 'Vol. ' . $selectedIssue->volume . ' No. ' . $selectedIssue->number . ($selectedIssue->year ? ' (' . $selectedIssue->year . ')' : ''),
+                        'author_fee' => (int)($selectedIssue->author_fee ?? ($journal->author_fee ?? 0)),
+                    ] : null,
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'journal' => $journalPayload,
+                'years_options' => $availableYears,
+                'issues_options' => $issuesOptions,
                 'summary' => [
-                    'is_issue_filtered' => $isIssueFiltered,
+                    'is_scope' => $isScope,
+                    'is_issue_filtered' => !empty($selectedIssue),
+                    'is_year_filtered' => (!empty($filterYear) && $filterYear !== 'all'),
+                    'selected_year' => (!empty($filterYear) && $filterYear !== 'all') ? $filterYear : null,
                     'total_submissions' => $totalSubmissions,
                     'total_published' => $publishedCount,
                     'total_unpublished' => $unpublishedCount,
@@ -748,6 +1009,9 @@ class DashboardController extends Controller
                         'categories' => $issueChartCategories,
                         'published' => $issueChartPublished,
                         'unpublished' => $issueChartUnpublished,
+                        'mode' => $issueChartMode,
+                        'title' => $issueChartTitle,
+                        'description' => $issueChartDesc,
                     ],
                     'year_chart' => [
                         'categories' => $yearCategories,
@@ -762,12 +1026,12 @@ class DashboardController extends Controller
                     ],
                     'article_status_chart' => [
                         'labels' => ['Published', 'Belum Publish', 'Naskah Menunggu'],
-                        'series' => [$publishedCount, $unpublishedCount, $totalWaiting],
+                        'series' => [$publishedCount, $unpublishedCount, $selectedIssue ? 0 : $totalWaiting],
                         'colors' => ['#50CD89', '#FFC700', '#7239EA'],
                     ],
                 ],
+                'journals_table' => $journalsTableData,
                 'issues_table' => array_reverse($issuesTableData),
-                'issues_options' => $issuesOptions,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -790,47 +1054,73 @@ class DashboardController extends Controller
                 ], 403);
             }
 
+            $controlPanel = $request->cookie('control_panel', 'journal');
             $journalId = $request->get('journal_id');
             $issueId = $request->get('issue_id');
+            $year = $request->get('year');
             $type = $request->get('type', 'belum_lunas');
 
-            if ($journalId) {
-                $journal = Journal::find($journalId);
-            } else {
-                $journals = Journal::orderBy('name')->get();
-                $journal = $journals->first(fn($j) => $this->canUserAccessJournal($user, $j));
+            if (!in_array($type, ['belum_lunas', 'belum_bayar'])) {
+                $type = 'belum_lunas';
             }
 
-            if (!$journal || !$this->canUserAccessJournal($user, $journal)) {
+            // Get journals accessible to this user
+            $journals = Journal::orderBy('name')->get()
+                ->filter(fn($j) => $this->canUserAccessJournal($user, $j))
+                ->values();
+
+            if (!$journalId) {
+                $matchingControlPanelJournal = $journals->firstWhere('type', $controlPanel);
+                $journalId = $matchingControlPanelJournal ? $matchingControlPanelJournal->id : $journals->first()?->id;
+            }
+
+            $resolved = $this->resolveSelectedJournals($user, (string)$journalId, $journals);
+            if (!$resolved['authorized']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Jurnal tidak ditemukan atau Anda tidak memiliki akses',
-                ], 404);
+                    'message' => $resolved['message'],
+                ], $resolved['error_code']);
             }
 
-            $issuesQuery = Issue::where('journal_id', $journal->id)
-                ->with(['submissions.paymentInvoices.payments']);
+            $isScope = $resolved['is_scope'];
+            $selectedJournals = $resolved['journals'];
+            $selectedJournalIds = $selectedJournals->pluck('id')->all();
+            $journalsById = $selectedJournals->keyBy('id');
+            $journal = $resolved['journal'];
 
             $selectedIssue = null;
-            if ($issueId && $issueId !== 'all') {
-                $selectedIssue = Issue::where('journal_id', $journal->id)->find($issueId);
-                if ($selectedIssue) {
-                    $issuesQuery->where('id', $selectedIssue->id);
+            if (!$isScope && !empty($issueId) && $issueId !== 'all') {
+                $selectedIssue = Issue::where('journal_id', $journal->id)->where('id', $issueId)->first();
+                if (!$selectedIssue) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Issue tidak ditemukan pada jurnal ini',
+                    ], 404);
                 }
             }
 
-            $issues = $issuesQuery->orderBy('year', 'desc')
+            $issuesQuery = Issue::whereIn('journal_id', $selectedJournalIds)
+                ->with(['submissions.paymentInvoices.payments'])
+                ->orderBy('year', 'desc')
                 ->orderBy('volume', 'desc')
-                ->orderBy('number', 'desc')
-                ->get();
+                ->orderBy('number', 'desc');
 
-            $matchedSubmissions = [];
+            if ($selectedIssue) {
+                $issuesQuery->where('id', $selectedIssue->id);
+            } elseif (!empty($year) && $year !== 'all') {
+                $issuesQuery->where('year', $year);
+            }
+
+            $issues = $issuesQuery->get();
+
+            $submissionsList = [];
             $totalFee = 0;
             $totalPaid = 0;
             $totalRemaining = 0;
 
             foreach ($issues as $issue) {
-                $issueFee = (int)($issue->author_fee ?? ($journal->author_fee ?? 0));
+                $issueJournal = $journalsById[$issue->journal_id] ?? ($journal ?: Journal::find($issue->journal_id));
+                $issueFee = (int)($issue->author_fee ?? ($issueJournal?->author_fee ?? 0));
                 $issueLabel = 'Vol. ' . $issue->volume . ' No. ' . $issue->number . ($issue->year ? ' (' . $issue->year . ')' : '');
 
                 foreach ($issue->submissions as $submission) {
@@ -859,10 +1149,13 @@ class DashboardController extends Controller
                     }
 
                     $isBelumLunas = ($paidPercent > 0 || $paidAmount > 0);
-                    $isBelumBayar = ($paidPercent == 0 && $paidAmount == 0);
+                    $isBelumBayar = (!$isBelumLunas);
 
-                    $isMatch = ($type === 'belum_lunas' && $isBelumLunas) || ($type === 'belum_bayar' && $isBelumBayar);
-                    if (!$isMatch) {
+                    if ($type === 'belum_lunas' && !$isBelumLunas) {
+                        continue;
+                    }
+
+                    if ($type === 'belum_bayar' && !$isBelumBayar) {
                         continue;
                     }
 
@@ -871,77 +1164,85 @@ class DashboardController extends Controller
                     $totalPaid += $paidAmount;
                     $totalRemaining += $remaining;
 
-                    // Title format
-                    $titleRaw = $submission->fullTitle;
-                    $title = is_array($titleRaw)
-                        ? implode(', ', $titleRaw)
-                        : ($titleRaw ?: ($submission->title ?? 'Untitled'));
-
-                    // Authors format
-                    $authors = $submission->authorsString;
-                    if (empty($authors) && is_array($submission->authors)) {
-                        $authors = collect($submission->authors)->pluck('name')->filter()->implode(', ');
+                    $effectivePercent = $paidPercent;
+                    if ($effectivePercent == 0 && $subFee > 0 && $paidAmount > 0) {
+                        $effectivePercent = (int)round(($paidAmount / $subFee) * 100);
                     }
 
-                    // Published status check
-                    $isPublished = ($submission->status == 3)
-                        || !empty($submission->urlPublished)
-                        || Str::contains(strtolower($submission->status_label ?? ''), 'publish');
+                    // Author formatting
+                    $authorDisplay = '-';
+                    if (!empty($submission->authorsString)) {
+                        $authorDisplay = $submission->authorsString;
+                    } elseif (is_array($submission->authors)) {
+                        $names = collect($submission->authors)->pluck('name')->filter()->implode(', ');
+                        if (!empty($names)) {
+                            $authorDisplay = $names;
+                        }
+                    }
 
-                    // Invoices detail
-                    $invoices = $submission->paymentInvoices->map(function ($inv) {
-                        return [
+                    // Invoices formatting
+                    $invoicesSummary = [];
+                    foreach ($submission->paymentInvoices as $inv) {
+                        $invoicesSummary[] = [
+                            'id' => $inv->id,
                             'invoice_number' => $inv->invoice_number ?: '-',
-                            'payment_percent' => (int)$inv->payment_percent,
+                            'payment_percent' => $inv->payment_percent,
+                            'payment_amount' => (int)$inv->payment_amount,
                             'is_paid' => (bool)$inv->is_paid,
-                            'due_date' => $inv->payment_due_date ? \Carbon\Carbon::parse($inv->payment_due_date)->format('d/m/Y') : null,
+                            'due_date' => $inv->payment_due_date ? date('d M Y', strtotime($inv->payment_due_date)) : null,
                         ];
-                    })->values();
+                    }
 
-                    $matchedSubmissions[] = [
-                        'submission_id' => (string)$submission->submission_id,
-                        'title' => $title,
-                        'authors' => $authors ?: '-',
+                    $submissionsList[] = [
+                        'id' => $submission->id,
+                        'submission_id' => $submission->submission_id,
+                        'title' => $submission->fullTitle ?: 'Tanpa Judul',
+                        'authors' => $authorDisplay,
+                        'issue_id' => $issue->id,
                         'issue_label' => $issueLabel,
-                        'is_published' => $isPublished,
-                        'status_label' => $submission->status_label ?: ($isPublished ? 'Published' : 'Belum Publish'),
+                        'journal_id' => $issue->journal_id,
+                        'journal_name' => $issueJournal?->name ?? '-',
+                        'status' => $submission->status,
+                        'status_label' => $submission->status_label ?: ($submission->status == '3' ? 'Published' : 'Belum Publish'),
+                        'is_published' => ($submission->status == '3'),
+                        'payment_status' => $submission->payment_status,
                         'author_fee' => $subFee,
                         'paid_amount' => $paidAmount,
-                        'paid_percent' => $subFee > 0 ? (int)round(($paidAmount / $subFee) * 100) : $paidPercent,
                         'remaining_amount' => $remaining,
-                        'invoices' => $invoices,
-                        'action_url' => route('back.journal.article.index', [$journal->url_path, $issue->id]),
+                        'paid_percent' => $effectivePercent,
+                        'invoices' => $invoicesSummary,
+                        'action_url' => $issueJournal ? route('back.journal.article.index', [$issueJournal->url_path, $issue->id]) : '#',
                     ];
                 }
-            }
-
-            $issueMeta = null;
-            if ($selectedIssue) {
-                $issueMeta = [
-                    'id' => $selectedIssue->id,
-                    'label' => 'Vol. ' . $selectedIssue->volume . ' No. ' . $selectedIssue->number . ($selectedIssue->year ? ' (' . $selectedIssue->year . ')' : ''),
-                ];
             }
 
             return response()->json([
                 'success' => true,
                 'meta' => [
+                    'type' => $type,
+                    'type_label' => $type === 'belum_lunas' ? 'Belum Lunas (DP/Cicil)' : 'Belum Bayar (0%)',
                     'journal' => [
-                        'id' => $journal->id,
-                        'name' => $journal->name,
+                        'id' => $isScope ? $resolved['scope_id'] : $journal->id,
+                        'name' => $isScope ? $resolved['scope_name'] : $journal->name,
+                        'url_path' => $isScope ? null : $journal->url_path,
+                        'is_scope' => $isScope,
                     ],
-                    'issue' => $issueMeta,
-                    'total_count' => count($matchedSubmissions),
+                    'issue' => $selectedIssue ? [
+                        'id' => $selectedIssue->id,
+                        'label' => 'Vol. ' . $selectedIssue->volume . ' No. ' . $selectedIssue->number . ($selectedIssue->year ? ' (' . $selectedIssue->year . ')' : ''),
+                    ] : null,
+                    'year' => (!empty($year) && $year !== 'all') ? $year : null,
+                    'total_count' => count($submissionsList),
                     'total_fee' => $totalFee,
                     'total_paid' => $totalPaid,
                     'total_remaining' => $totalRemaining,
                 ],
-                'submissions' => $matchedSubmissions,
+                'submissions' => $submissionsList,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => 'Gagal memuat daftar submission',
+                'error' => 'Gagal memuat data submission',
                 'message' => $e->getMessage(),
             ], 500);
         }

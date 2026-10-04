@@ -10,6 +10,29 @@
         transform: translateY(-3px);
         box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.08) !important;
     }
+    .journal-master-row {
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    .journal-master-row:hover {
+        background-color: rgba(0, 158, 247, 0.08) !important;
+    }
+    .tree-chevron-icon {
+        display: inline-block;
+        transition: transform 0.2s ease;
+    }
+    .tree-chevron-icon.collapsed {
+        transform: rotate(-90deg);
+    }
+    .journal-child-row {
+        transition: all 0.2s ease;
+    }
+    .journal-child-row:hover {
+        background-color: rgba(0, 0, 0, 0.02) !important;
+    }
+    .journal-child-row td:first-child {
+        border-left: 3px solid #009ef7 !important;
+    }
 </style>
 @endsection
 
@@ -34,18 +57,28 @@
                             <div class="text-gray-500 fs-7 d-flex flex-wrap align-items-center gap-2">
                                 <span>Pilih jurnal & edisi untuk melihat statistik artikel dan rekap data</span>
                                 <span class="badge badge-light-primary fw-bold" id="journal_fee_badge">Author Fee: Rp 0</span>
+                                <span class="badge badge-light-warning fw-bold d-none" id="filtered_year_badge">Tahun: -</span>
                                 <span class="badge badge-light-info fw-bold d-none" id="filtered_issue_badge">Issue: -</span>
                             </div>
                         </div>
                     </div>
 
-                    {{-- Dropdown Jurnal, Dropdown Issue & Refresh (1 Baris) --}}
+                    {{-- Dropdown Jurnal, Dropdown Tahun, Dropdown Issue & Refresh (1 Baris) --}}
                     <div class="d-flex flex-nowrap align-items-end gap-2 gap-sm-3 flex-shrink-0">
                         <div class="d-flex flex-column">
                             <label class="text-gray-600 fs-8 fw-bold mb-1">PILIH JURNAL</label>
-                            <div class="position-relative w-160px w-sm-200px w-md-250px w-lg-280px">
+                            <div class="position-relative w-150px w-sm-180px w-md-220px w-lg-250px">
                                 <select id="journal_select" class="form-select form-select-solid form-select-sm fw-bold"
                                     data-control="select2" data-placeholder="Pilih Jurnal">
+                                    @if (!empty($accessible_scopes))
+                                        <optgroup label="RINGKASAN GABUNGAN">
+                                            @foreach ($accessible_scopes as $sId => $scope)
+                                                <option value="{{ $sId }}" @if ($selected_journal_id == $sId) selected @endif>
+                                                    {{ $scope['label'] }}
+                                                </option>
+                                            @endforeach
+                                        </optgroup>
+                                    @endif
                                     @forelse ($grouped_journals as $typeLabel => $journalGroup)
                                         <optgroup label="{{ $typeLabel }}">
                                             @foreach ($journalGroup as $item)
@@ -62,8 +95,25 @@
                         </div>
 
                         <div class="d-flex flex-column">
+                            <label class="text-gray-600 fs-8 fw-bold mb-1">FILTER TAHUN</label>
+                            <div class="position-relative w-110px w-sm-130px w-md-140px">
+                                <select id="year_select" class="form-select form-select-solid form-select-sm fw-bold"
+                                    data-control="select2" data-placeholder="Semua Tahun">
+                                    <option value="all" @if(empty($selected_year) || $selected_year === 'all') selected @endif>Semua Tahun</option>
+                                    @if(isset($initial_years))
+                                        @foreach ($initial_years as $yr)
+                                            <option value="{{ $yr }}" @if(isset($selected_year) && $selected_year == $yr) selected @endif>
+                                                {{ $yr }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column">
                             <label class="text-gray-600 fs-8 fw-bold mb-1">FILTER ISSUE</label>
-                            <div class="position-relative w-140px w-sm-180px w-md-200px w-lg-220px">
+                            <div class="position-relative w-140px w-sm-170px w-md-190px w-lg-210px">
                                 <select id="issue_select" class="form-select form-select-solid form-select-sm fw-bold"
                                     data-control="select2" data-placeholder="Semua Issue">
                                     <option value="all" @if(empty($selected_issue_id) || $selected_issue_id === 'all') selected @endif>Semua Issue</option>
@@ -313,8 +363,8 @@
                     <div class="card card-flush h-100 shadow-sm">
                         <div class="card-header pt-5">
                             <div class="card-title d-flex flex-column">
-                                <h3 class="card-label fw-bold text-gray-900 fs-4">Statistik Artikel Publish vs Belum Publish per Edisi</h3>
-                                <span class="text-gray-500 fs-7">Perbandingan jumlah artikel terbit dan dalam proses per edisi/issue</span>
+                                <h3 class="card-label fw-bold text-gray-900 fs-4" id="chart_articles_title">Statistik Artikel Publish vs Belum Publish per Edisi</h3>
+                                <span class="text-gray-500 fs-7" id="chart_articles_desc">Perbandingan jumlah artikel terbit dan dalam proses per edisi/issue</span>
                             </div>
                         </div>
                         <div class="card-body pt-0">
@@ -430,8 +480,14 @@
             <div class="card card-flush shadow-sm mb-5 mb-xl-8">
                 <div class="card-header pt-5">
                     <div class="card-title d-flex flex-column">
-                        <h3 class="card-label fw-bold text-gray-900 fs-4">Rekapitulasi Artikel & Pembayaran per Edisi (Issue)</h3>
-                        <span class="text-gray-500 fs-7">Rincian status publikasi, pembayaran, dan realisasi pendapatan per edisi</span>
+                        <h3 class="card-label fw-bold text-gray-900 fs-4" id="table_title">Rekapitulasi Artikel & Pembayaran per Edisi (Issue)</h3>
+                        <span class="text-gray-500 fs-7" id="table_desc">Rincian status publikasi, pembayaran, dan realisasi pendapatan per edisi</span>
+                    </div>
+                    <div class="card-toolbar d-none" id="table_tree_toolbar">
+                        <button type="button" class="btn btn-sm btn-light-primary fw-bold" id="btn_toggle_all_trees">
+                            <i class="ki-duotone ki-element-plus fs-6 me-1"><span class="path1"></span><span class="path2"></span></i>
+                            <span id="btn_toggle_all_text">Buka Semua Edisi</span>
+                        </button>
                     </div>
                 </div>
                 <div class="card-body pt-0">
@@ -440,7 +496,7 @@
                             <thead>
                                 <tr class="fw-bold fs-7 text-gray-500 text-uppercase bg-light">
                                     <th class="min-w-40px text-center">No</th>
-                                    <th class="min-w-175px">Edisi / Issue</th>
+                                    <th class="min-w-175px" id="th_column_edisi">Edisi / Issue</th>
                                     <th class="min-w-80px text-center">Tahun</th>
                                     <th class="min-w-100px text-end">Author Fee</th>
                                     <th class="min-w-90px text-center">Total Artikel</th>
@@ -598,10 +654,14 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const journalSelect = document.getElementById('journal_select');
+    const yearSelect = document.getElementById('year_select');
     const issueSelect = document.getElementById('issue_select');
     const btnRefresh = document.getElementById('btn_refresh');
     const loadingOverlay = document.getElementById('dashboard_loading_overlay');
     let isUpdatingIssueDropdown = false;
+    let isUpdatingYearDropdown = false;
+    let cachedIssuesOptions = [];
+    let allTreesExpanded = false;
 
     function formatRupiah(amount) {
         return 'Rp ' + parseInt(amount || 0).toLocaleString('id-ID');
@@ -795,13 +855,41 @@ document.addEventListener('DOMContentLoaded', function () {
     const chartArticleStatus = new ApexCharts(document.querySelector("#chart_article_status"), chartArticleStatusOptions);
     chartArticleStatus.render();
 
+    // Helper function to update Issue Select Options
+    function updateIssueSelectOptions(optionsList, selectedVal = 'all') {
+        isUpdatingIssueDropdown = true;
+        if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
+            const $issueSelect = $('#issue_select');
+            $issueSelect.empty();
+            $issueSelect.append(new Option('Semua Issue', 'all', selectedVal === 'all', selectedVal === 'all'));
+            optionsList.forEach(opt => {
+                $issueSelect.append(new Option(opt.label, opt.id, opt.id == selectedVal, opt.id == selectedVal));
+            });
+            $issueSelect.val(selectedVal).trigger('change.select2');
+        } else if (issueSelect) {
+            issueSelect.innerHTML = '<option value="all">Semua Issue</option>';
+            optionsList.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.id;
+                option.textContent = opt.label;
+                if (opt.id == selectedVal) option.selected = true;
+                issueSelect.appendChild(option);
+            });
+            issueSelect.value = selectedVal;
+        }
+        isUpdatingIssueDropdown = false;
+    }
+
     // Main Function to load statistics via API and update DOM
-    function loadJournalStats(journalId, issueId = null, shouldUpdateIssueDropdown = false) {
+    function loadJournalStats(journalId, issueId = null, year = null, shouldUpdateDropdowns = false) {
         if (!journalId) return;
 
         loadingOverlay.classList.remove('d-none');
 
         let url = "{{ route('back.dashboard.journal.stat') }}?journal_id=" + encodeURIComponent(journalId);
+        if (year && year !== 'all') {
+            url += "&year=" + encodeURIComponent(year);
+        }
         if (issueId && issueId !== 'all') {
             url += "&issue_id=" + encodeURIComponent(issueId);
         }
@@ -810,6 +898,11 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window.history && window.history.replaceState) {
             const currentUrl = new URL(window.location.href);
             currentUrl.searchParams.set('journal_id', journalId);
+            if (year && year !== 'all') {
+                currentUrl.searchParams.set('year', year);
+            } else {
+                currentUrl.searchParams.delete('year');
+            }
             if (issueId && issueId !== 'all') {
                 currentUrl.searchParams.set('issue_id', issueId);
             } else {
@@ -824,35 +917,53 @@ document.addEventListener('DOMContentLoaded', function () {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => {
+        .then(async response => {
             if (!response.ok) {
-                return response.json().then(errData => {
-                    throw new Error(errData.message || errData.error || ('Gagal mengambil data statistik (HTTP ' + response.status + ')'));
-                }).catch(err => {
-                    if (err.message && !err.message.includes('JSON')) {
-                        throw err;
+                let errorMsg = 'Gagal mengambil data statistik';
+                try {
+                    const errData = await response.json();
+                    if (errData && (errData.message || errData.error)) {
+                        errorMsg = errData.message || errData.error;
                     }
-                    throw new Error('Gagal mengambil data statistik (HTTP ' + response.status + ')');
-                });
+                } catch (e) {}
+                throw new Error(errorMsg);
             }
             return response.json();
         })
         .then(res => {
             if (!res.success) {
-                throw new Error(res.message || 'Error');
+                throw new Error(res.message || res.error || 'Terjadi kesalahan saat memuat data statistik');
             }
 
             const journal = res.journal;
             const summary = res.summary;
             const charts = res.charts;
             const issuesTable = res.issues_table;
+            const journalsTable = res.journals_table || [];
             const issuesOptions = res.issues_options || [];
 
             // Update Header & Journal Info DOM
             document.getElementById('journal_name_display').textContent = journal.name || journal.title;
 
+            const yearBadge = document.getElementById('filtered_year_badge');
+            if (summary.is_year_filtered && summary.selected_year) {
+                if (yearBadge) {
+                    yearBadge.textContent = 'Tahun: ' + summary.selected_year;
+                    yearBadge.classList.remove('d-none');
+                }
+            } else {
+                if (yearBadge) {
+                    yearBadge.classList.add('d-none');
+                }
+            }
+
             const issueBadge = document.getElementById('filtered_issue_badge');
-            if (journal.selected_issue) {
+            if (journal.is_scope) {
+                document.getElementById('journal_fee_badge').textContent = 'Cakupan: ' + (journal.total_journals || 0) + ' Jurnal';
+                if (issueBadge) {
+                    issueBadge.classList.add('d-none');
+                }
+            } else if (journal.selected_issue) {
                 document.getElementById('journal_fee_badge').textContent = 'Author Fee Edisi: ' + formatRupiah(journal.author_fee);
                 if (issueBadge) {
                     issueBadge.textContent = 'Edisi: ' + journal.selected_issue.label;
@@ -865,30 +976,67 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
 
-            // Rebuild Issue Select Options if requested (e.g. on journal switch)
-            if (shouldUpdateIssueDropdown) {
-                isUpdatingIssueDropdown = true;
-                if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
-                    const $issueSelect = $('#issue_select');
-                    $issueSelect.empty();
-                    $issueSelect.append(new Option('Semua Issue', 'all', true, true));
-                    issuesOptions.forEach(opt => {
-                        $issueSelect.append(new Option(opt.label, opt.id, false, false));
+            cachedIssuesOptions = issuesOptions;
+
+            // Rebuild Select Options if requested (e.g. on journal switch)
+            if (shouldUpdateDropdowns) {
+                isUpdatingYearDropdown = true;
+                const yearsOptions = res.years_options || [];
+                if (typeof jQuery !== 'undefined' && $('#year_select').length) {
+                    const $yearSelect = $('#year_select');
+                    $yearSelect.empty();
+                    $yearSelect.append(new Option('Semua Tahun', 'all', true, true));
+                    yearsOptions.forEach(yr => {
+                        $yearSelect.append(new Option(yr, yr, false, false));
                     });
-                    $issueSelect.val('all').trigger('change.select2');
-                } else if (issueSelect) {
-                    issueSelect.innerHTML = '<option value="all" selected>Semua Issue</option>';
-                    issuesOptions.forEach(opt => {
-                        const option = document.createElement('option');
-                        option.value = opt.id;
-                        option.textContent = opt.label;
-                        issueSelect.appendChild(option);
+                    $yearSelect.val('all').trigger('change.select2');
+                } else if (yearSelect) {
+                    yearSelect.innerHTML = '<option value="all" selected>Semua Tahun</option>';
+                    yearsOptions.forEach(yr => {
+                        const opt = document.createElement('option');
+                        opt.value = yr;
+                        opt.textContent = yr;
+                        yearSelect.appendChild(opt);
                     });
-                    issueSelect.value = 'all';
+                    yearSelect.value = 'all';
                 }
-                setTimeout(() => {
+                isUpdatingYearDropdown = false;
+
+                if (journal.is_scope) {
+                    isUpdatingIssueDropdown = true;
+                    if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
+                        const $issueSelect = $('#issue_select');
+                        $issueSelect.empty();
+                        $issueSelect.append(new Option('Semua Issue', 'all', true, true));
+                        $issueSelect.val('all').prop('disabled', true).trigger('change.select2');
+                    } else if (issueSelect) {
+                        issueSelect.innerHTML = '<option value="all" selected>Semua Issue</option>';
+                        issueSelect.value = 'all';
+                        issueSelect.disabled = true;
+                    }
                     isUpdatingIssueDropdown = false;
-                }, 150);
+                } else {
+                    if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
+                        $('#issue_select').prop('disabled', false).trigger('change.select2');
+                    } else if (issueSelect) {
+                        issueSelect.disabled = false;
+                    }
+                    updateIssueSelectOptions(issuesOptions, 'all');
+                }
+            } else {
+                if (journal.is_scope) {
+                    if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
+                        $('#issue_select').prop('disabled', true).trigger('change.select2');
+                    } else if (issueSelect) {
+                        issueSelect.disabled = true;
+                    }
+                } else {
+                    if (typeof jQuery !== 'undefined' && $('#issue_select').length) {
+                        $('#issue_select').prop('disabled', false).trigger('change.select2');
+                    } else if (issueSelect) {
+                        issueSelect.disabled = false;
+                    }
+                }
             }
 
             // Update Summary Card 1 (Total Artikel)
@@ -916,7 +1064,13 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('stat_total_paid_received').textContent = formatRupiah(summary.total_paid_received);
             document.getElementById('stat_total_outstanding').textContent = formatRupiah(summary.total_outstanding);
             document.getElementById('stat_total_potential').textContent = formatRupiah(summary.total_potential_revenue);
-            document.getElementById('stat_total_issues').textContent = (journal.filtered_issues_count ?? journal.total_issues ?? 0).toLocaleString('id-ID') + (summary.is_issue_filtered ? ' (Filter)' : '');
+            let issueFilterText = '';
+            if (summary.is_issue_filtered) {
+                issueFilterText = ' (Filter Edisi)';
+            } else if (summary.is_year_filtered) {
+                issueFilterText = ' (Tahun ' + summary.selected_year + ')';
+            }
+            document.getElementById('stat_total_issues').textContent = (journal.filtered_issues_count ?? journal.total_issues ?? 0).toLocaleString('id-ID') + issueFilterText;
 
             if (summary.is_issue_filtered) {
                 document.getElementById('stat_waiting_count').textContent = (summary.waiting_submissions.total || 0) + ' Naskah Baru';
@@ -936,7 +1090,18 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('legend_stat_unpublished').textContent = summary.total_unpublished + ' Artikel';
             document.getElementById('legend_stat_waiting').textContent = (summary.is_issue_filtered ? summary.waiting_submissions.total + ' Naskah (Jurnal)' : summary.waiting_submissions.total + ' Naskah');
 
-            // Update Chart 1: Articles Per Issue
+            // Update Chart 1: Articles Per Issue / Per Jurnal
+            const chartTitleEl = document.getElementById('chart_articles_title');
+            const chartDescEl = document.getElementById('chart_articles_desc');
+            if (charts.issue_chart) {
+                if (chartTitleEl && charts.issue_chart.title) {
+                    chartTitleEl.textContent = charts.issue_chart.title;
+                }
+                if (chartDescEl && charts.issue_chart.description) {
+                    chartDescEl.textContent = charts.issue_chart.description;
+                }
+            }
+
             if (charts.issue_chart.categories && charts.issue_chart.categories.length > 0) {
                 document.getElementById('chart_articles_per_issue').classList.remove('d-none');
                 document.getElementById('empty_chart_issue').classList.add('d-none');
@@ -978,66 +1143,227 @@ document.addEventListener('DOMContentLoaded', function () {
             const statusSeries = charts.article_status_chart.series || [0, 0, 0];
             chartArticleStatus.updateSeries(statusSeries);
 
-            // Update Issues Table DOM
+            // Update Issues / Journals Table DOM
             const tbody = document.getElementById('table_issues_body');
             tbody.innerHTML = '';
 
-            if (!issuesTable || issuesTable.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="13" class="text-center py-6 text-gray-500">
-                            <i class="ki-duotone ki-information-2 fs-2x text-gray-400 mb-2"></i>
-                            <div class="fw-bold">Belum ada edisi (issue) yang cocok untuk jurnal ini.</div>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                issuesTable.forEach((item, index) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="text-center fw-bold text-gray-700">${index + 1}</td>
-                        <td>
-                            <div class="d-flex flex-column">
-                                <span class="text-gray-900 fw-bold fs-6">${item.issue_label}</span>
-                                <span class="text-gray-500 fs-8">${item.title}</span>
-                            </div>
-                        </td>
-                        <td class="text-center fw-semibold text-gray-700">${item.year || '-'}</td>
-                        <td class="text-end fw-semibold text-gray-900">${formatRupiah(item.author_fee)}</td>
-                        <td class="text-center">
-                            <span class="badge badge-light-primary fw-bold">${item.total_articles}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-light-success fw-bold">${item.published_count}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-light-warning fw-bold">${item.unpublished_count}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-success fw-bold">${item.lunas_count}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-warning fw-bold">${item.belum_lunas_count}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-danger fw-bold">${item.belum_bayar_count}</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge badge-info fw-bold">${item.free_count}</span>
-                        </td>
-                        <td class="text-end fw-bold text-success">${formatRupiah(item.total_income)}</td>
-                        <td class="text-center">
-                            <a href="${item.action_url}" class="btn btn-icon btn-light-primary btn-sm" title="Lihat Artikel Edisi">
-                                <i class="ki-duotone ki-eye fs-4">
-                                    <span class="path1"></span>
-                                    <span class="path2"></span>
-                                    <span class="path3"></span>
-                                </i>
-                            </a>
-                        </td>
+            const tableTitle = document.getElementById('table_title');
+            const tableDesc = document.getElementById('table_desc');
+            const thColumnEdisi = document.getElementById('th_column_edisi');
+            const tableTreeToolbar = document.getElementById('table_tree_toolbar');
+            const btnToggleAllTrees = document.getElementById('btn_toggle_all_trees');
+
+            if (journal.is_scope) {
+                if (tableTitle) tableTitle.textContent = 'Rekapitulasi Artikel & Pembayaran per Jurnal & Edisi';
+                if (tableDesc) tableDesc.textContent = 'Klik baris jurnal untuk melihat atau menutup rincian per edisi (issue)';
+                if (thColumnEdisi) thColumnEdisi.textContent = 'Jurnal / Edisi';
+                if (tableTreeToolbar) tableTreeToolbar.classList.remove('d-none');
+                if (btnToggleAllTrees) {
+                    btnToggleAllTrees.innerHTML = `
+                        <i class="ki-duotone ki-element-plus fs-6 me-1"><span class="path1"></span><span class="path2"></span></i>
+                        <span id="btn_toggle_all_text">Buka Semua Edisi</span>
                     `;
-                    tbody.appendChild(tr);
-                });
+                }
+                allTreesExpanded = false;
+
+                if (!journalsTable || journalsTable.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="13" class="text-center py-6 text-gray-500">
+                                <i class="ki-duotone ki-information-2 fs-2x text-gray-400 mb-2"></i>
+                                <div class="fw-bold">Belum ada jurnal atau edisi yang cocok untuk cakupan ini.</div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    journalsTable.forEach((item, index) => {
+                        // Master Row (Per Jurnal)
+                        const masterTr = document.createElement('tr');
+                        masterTr.className = 'journal-master-row bg-light-subtle';
+                        masterTr.dataset.journalId = item.journal_id;
+                        masterTr.innerHTML = `
+                            <td class="text-center fw-bold text-gray-800">
+                                <div class="d-flex align-items-center justify-content-center gap-1">
+                                    <button type="button" class="btn btn-sm btn-icon tree-chevron-btn p-0" data-journal-id="${item.journal_id}" style="width: 22px; height: 22px;" title="Buka/Tutup Edisi">
+                                        <i class="ki-duotone ki-down fs-7 tree-chevron-icon collapsed" id="chevron_${item.journal_id}"></i>
+                                    </button>
+                                    <span>${index + 1}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="text-gray-900 fw-bolder fs-6">${escapeHtml(item.journal_name)}</span>
+                                        <span class="badge badge-light-primary fw-bold fs-9">${item.total_issues} Edisi</span>
+                                    </div>
+                                    ${item.journal_title && item.journal_title !== item.journal_name ? `<span class="text-muted fs-8">${escapeHtml(item.journal_title)}</span>` : ''}
+                                </div>
+                            </td>
+                            <td class="text-center text-muted fs-8">-</td>
+                            <td class="text-end fw-semibold text-gray-800">${formatRupiah(item.journal_author_fee)}</td>
+                            <td class="text-center">
+                                <span class="badge badge-light-primary fw-bold">${item.total_articles}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light-success fw-bold">${item.published_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light-warning fw-bold">${item.unpublished_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-success fw-bold">${item.lunas_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-warning fw-bold">${item.belum_lunas_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-danger fw-bold">${item.belum_bayar_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info fw-bold">${item.free_count}</span>
+                            </td>
+                            <td class="text-end fw-bold text-success">${formatRupiah(item.total_income)}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-icon btn-light-info btn-sm tree-action-toggle" data-journal-id="${item.journal_id}" title="Buka/Tutup Rincian Edisi">
+                                    <i class="ki-duotone ki-element-plus fs-5">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                    </i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(masterTr);
+
+                        // Child Rows (Issues of this journal)
+                        if (item.issues && item.issues.length > 0) {
+                            item.issues.forEach((iss, issIdx) => {
+                                const childTr = document.createElement('tr');
+                                childTr.className = `journal-child-row journal-child-${item.journal_id} d-none bg-body`;
+                                childTr.dataset.parentJournal = item.journal_id;
+                                childTr.innerHTML = `
+                                    <td class="text-center text-muted fs-8">${index + 1}.${issIdx + 1}</td>
+                                    <td class="ps-6">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-gray-400 me-2 fs-6">└─</span>
+                                            <div class="d-flex flex-column">
+                                                <span class="text-gray-800 fw-bold fs-7">${escapeHtml(iss.issue_label)}</span>
+                                                ${iss.title && iss.title !== '-' ? `<span class="text-muted fs-8">${escapeHtml(iss.title)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center text-gray-700 fs-7">${escapeHtml(iss.year || '-')}</td>
+                                    <td class="text-end text-gray-800 fs-7">${formatRupiah(iss.author_fee)}</td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-primary fw-semibold fs-8">${iss.total_articles}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-success fw-semibold fs-8">${iss.published_count}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-warning fw-semibold fs-8">${iss.unpublished_count}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-success text-success fw-semibold fs-8">${iss.lunas_count}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-warning text-warning fw-semibold fs-8">${iss.belum_lunas_count}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-danger text-danger fw-semibold fs-8">${iss.belum_bayar_count}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light-info text-info fw-semibold fs-8">${iss.free_count}</span>
+                                    </td>
+                                    <td class="text-end fw-semibold text-success fs-7">${formatRupiah(iss.total_income)}</td>
+                                    <td class="text-center">
+                                        <a href="${iss.action_url}" class="btn btn-icon btn-light-primary btn-sm" title="Lihat Artikel Edisi">
+                                            <i class="ki-duotone ki-eye fs-4">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                            </i>
+                                        </a>
+                                    </td>
+                                `;
+                                tbody.appendChild(childTr);
+                            });
+                        } else {
+                            const emptyChildTr = document.createElement('tr');
+                            emptyChildTr.className = `journal-child-row journal-child-${item.journal_id} d-none bg-body`;
+                            emptyChildTr.dataset.parentJournal = item.journal_id;
+                            emptyChildTr.innerHTML = `
+                                <td class="text-center text-muted fs-8">-</td>
+                                <td colspan="12" class="ps-6 py-3 text-muted fs-8 fst-italic">
+                                    <span class="text-gray-400 me-2">└─</span> Belum ada edisi (issue) untuk jurnal ini pada filter yang dipilih.
+                                </td>
+                            `;
+                            tbody.appendChild(emptyChildTr);
+                        }
+                    });
+                }
+            } else {
+                if (tableTitle) tableTitle.textContent = 'Rekapitulasi Artikel & Pembayaran per Edisi (Issue)';
+                if (tableDesc) tableDesc.textContent = 'Rincian status publikasi, pembayaran, dan realisasi pendapatan per edisi';
+                if (thColumnEdisi) thColumnEdisi.textContent = 'Edisi / Issue';
+                if (tableTreeToolbar) tableTreeToolbar.classList.add('d-none');
+
+                if (!issuesTable || issuesTable.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="13" class="text-center py-6 text-gray-500">
+                                <i class="ki-duotone ki-information-2 fs-2x text-gray-400 mb-2"></i>
+                                <div class="fw-bold">Belum ada edisi (issue) yang cocok untuk jurnal ini.</div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    issuesTable.forEach((item, index) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="text-center fw-bold text-gray-700">${index + 1}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="text-gray-900 fw-bold fs-6">${escapeHtml(item.issue_label)}</span>
+                                    <span class="text-gray-500 fs-8">${escapeHtml(item.title)}</span>
+                                </div>
+                            </td>
+                            <td class="text-center fw-semibold text-gray-700">${escapeHtml(item.year || '-')}</td>
+                            <td class="text-end fw-semibold text-gray-900">${formatRupiah(item.author_fee)}</td>
+                            <td class="text-center">
+                                <span class="badge badge-light-primary fw-bold">${item.total_articles}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light-success fw-bold">${item.published_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light-warning fw-bold">${item.unpublished_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-success fw-bold">${item.lunas_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-warning fw-bold">${item.belum_lunas_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-danger fw-bold">${item.belum_bayar_count}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info fw-bold">${item.free_count}</span>
+                            </td>
+                            <td class="text-end fw-bold text-success">${formatRupiah(item.total_income)}</td>
+                            <td class="text-center">
+                                <a href="${item.action_url}" class="btn btn-icon btn-light-primary btn-sm" title="Lihat Artikel Edisi">
+                                    <i class="ki-duotone ki-eye fs-4">
+                                        <span class="path1"></span>
+                                        <span class="path2"></span>
+                                        <span class="path3"></span>
+                                    </i>
+                                </a>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
             }
         })
         .catch(err => {
@@ -1054,36 +1380,70 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Event listener: Select2 & native change
-    if (typeof jQuery !== 'undefined' && $('#journal_select').length) {
-        $('#journal_select').on('change', function () {
+    if (typeof jQuery !== 'undefined') {
+        $('#journal_select').on('change select2:select', function () {
             const newJournalId = $(this).val();
             if (newJournalId) {
-                loadJournalStats(newJournalId, '', true);
+                loadJournalStats(newJournalId, '', '', true);
             }
         });
 
-        $('#issue_select').on('change', function () {
+        $('#year_select').on('change select2:select', function () {
+            if (isUpdatingYearDropdown) return;
+            const currentJournalId = $('#journal_select').val();
+            const selectedYear = $(this).val();
+            const filterYear = (selectedYear === 'all' || !selectedYear) ? '' : selectedYear;
+
+            // Filter issue options based on selected year
+            let filteredIssues = cachedIssuesOptions;
+            if (filterYear) {
+                filteredIssues = cachedIssuesOptions.filter(opt => opt.year == filterYear);
+            }
+            updateIssueSelectOptions(filteredIssues, 'all');
+
+            loadJournalStats(currentJournalId, '', filterYear, false);
+        });
+
+        $('#issue_select').on('change select2:select', function () {
             if (isUpdatingIssueDropdown) return;
             const currentJournalId = $('#journal_select').val();
+            const currentYear = $('#year_select').val();
+            const filterYear = (currentYear === 'all' || !currentYear) ? '' : currentYear;
             const selectedIssueId = $(this).val();
             const filterIssueId = (selectedIssueId === 'all' || !selectedIssueId) ? '' : selectedIssueId;
-            loadJournalStats(currentJournalId, filterIssueId, false);
+            loadJournalStats(currentJournalId, filterIssueId, filterYear, false);
         });
-    } else {
-        if (journalSelect) {
-            journalSelect.addEventListener('change', function () {
-                loadJournalStats(this.value, 'all', true);
-            });
-        }
+    }
 
-        if (issueSelect) {
-            issueSelect.addEventListener('change', function () {
-                if (isUpdatingIssueDropdown) return;
-                const currentJournalId = journalSelect ? journalSelect.value : null;
-                const filterIssueId = (this.value === 'all' || !this.value) ? '' : this.value;
-                loadJournalStats(currentJournalId, filterIssueId, false);
-            });
-        }
+    if (journalSelect) {
+        journalSelect.addEventListener('change', function () {
+            loadJournalStats(this.value, '', '', true);
+        });
+    }
+
+    if (yearSelect) {
+        yearSelect.addEventListener('change', function () {
+            if (isUpdatingYearDropdown) return;
+            const currentJournalId = journalSelect ? journalSelect.value : null;
+            const filterYear = (this.value === 'all' || !this.value) ? '' : this.value;
+            let filteredIssues = cachedIssuesOptions;
+            if (filterYear) {
+                filteredIssues = cachedIssuesOptions.filter(opt => opt.year == filterYear);
+            }
+            updateIssueSelectOptions(filteredIssues, 'all');
+            loadJournalStats(currentJournalId, '', filterYear, false);
+        });
+    }
+
+    if (issueSelect) {
+        issueSelect.addEventListener('change', function () {
+            if (isUpdatingIssueDropdown) return;
+            const currentJournalId = journalSelect ? journalSelect.value : null;
+            const currentYear = yearSelect ? yearSelect.value : null;
+            const filterYear = (currentYear === 'all' || !currentYear) ? '' : currentYear;
+            const filterIssueId = (this.value === 'all' || !this.value) ? '' : this.value;
+            loadJournalStats(currentJournalId, filterIssueId, filterYear, false);
+        });
     }
 
     if (btnRefresh) {
@@ -1091,11 +1451,95 @@ document.addEventListener('DOMContentLoaded', function () {
             const currentJournalId = (typeof jQuery !== 'undefined' && $('#journal_select').val())
                 ? $('#journal_select').val()
                 : (journalSelect ? journalSelect.value : null);
+            const currentYear = (typeof jQuery !== 'undefined' && $('#year_select').val())
+                ? $('#year_select').val()
+                : (yearSelect ? yearSelect.value : null);
+            const filterYear = (currentYear === 'all' || !currentYear) ? '' : currentYear;
             const selectedIssueId = (typeof jQuery !== 'undefined' && $('#issue_select').val())
                 ? $('#issue_select').val()
                 : (issueSelect ? issueSelect.value : null);
             const filterIssueId = (selectedIssueId === 'all' || !selectedIssueId) ? '' : selectedIssueId;
-            loadJournalStats(currentJournalId, filterIssueId, false);
+            loadJournalStats(currentJournalId, filterIssueId, filterYear, false);
+        });
+    }
+
+    // Tree view toggle handlers for multi-journal scope mode
+    function toggleJournalTree(journalId, forceState = null) {
+        const childRows = document.querySelectorAll(`.journal-child-${journalId}`);
+        const chevronIcon = document.getElementById(`chevron_${journalId}`);
+        if (!childRows || childRows.length === 0) return;
+
+        let shouldOpen;
+        if (forceState !== null) {
+            shouldOpen = forceState;
+        } else {
+            shouldOpen = childRows[0].classList.contains('d-none');
+        }
+
+        childRows.forEach(row => {
+            if (shouldOpen) {
+                row.classList.remove('d-none');
+            } else {
+                row.classList.add('d-none');
+            }
+        });
+
+        if (chevronIcon) {
+            if (shouldOpen) {
+                chevronIcon.classList.remove('collapsed');
+            } else {
+                chevronIcon.classList.add('collapsed');
+            }
+        }
+    }
+
+    const issuesTbody = document.getElementById('table_issues_body');
+    if (issuesTbody) {
+        issuesTbody.addEventListener('click', function (e) {
+            // Do not toggle tree if user clicked on an anchor link
+            if (e.target.closest('a')) {
+                return;
+            }
+
+            const masterRow = e.target.closest('.journal-master-row');
+            if (masterRow) {
+                const journalId = masterRow.dataset.journalId;
+                if (journalId) {
+                    toggleJournalTree(journalId);
+                }
+            }
+        });
+    }
+
+    const btnToggleAllTrees = document.getElementById('btn_toggle_all_trees');
+    if (btnToggleAllTrees) {
+        btnToggleAllTrees.addEventListener('click', function () {
+            allTreesExpanded = !allTreesExpanded;
+            const allChildRows = document.querySelectorAll('.journal-child-row');
+            const allChevrons = document.querySelectorAll('.tree-chevron-icon');
+
+            allChildRows.forEach(row => {
+                if (allTreesExpanded) {
+                    row.classList.remove('d-none');
+                } else {
+                    row.classList.add('d-none');
+                }
+            });
+
+            allChevrons.forEach(icon => {
+                if (allTreesExpanded) {
+                    icon.classList.remove('collapsed');
+                } else {
+                    icon.classList.add('collapsed');
+                }
+            });
+
+            btnToggleAllTrees.innerHTML = `
+                <i class="ki-duotone ${allTreesExpanded ? 'ki-element-minus' : 'ki-element-plus'} fs-6 me-1">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                <span id="btn_toggle_all_text">${allTreesExpanded ? 'Tutup Semua Edisi' : 'Buka Semua Edisi'}</span>
+            `;
         });
     }
 
@@ -1182,7 +1626,10 @@ document.addEventListener('DOMContentLoaded', function () {
                         </div>
                     </td>
                     <td>
-                        <span class="badge badge-light-primary fw-semibold fs-8">${escapeHtml(sub.issue_label)}</span>
+                        <div class="d-flex flex-column">
+                            ${sub.journal_name ? `<span class="badge badge-light-info fw-bold fs-9 mb-1 align-self-start">${escapeHtml(sub.journal_name)}</span>` : ''}
+                            <span class="badge badge-light-primary fw-semibold fs-8 align-self-start">${escapeHtml(sub.issue_label)}</span>
+                        </div>
                     </td>
                     <td class="text-center">
                         ${statusBadge}
@@ -1216,6 +1663,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const journalId = (typeof jQuery !== 'undefined' && $('#journal_select').val())
             ? $('#journal_select').val()
             : (journalSelect ? journalSelect.value : null);
+
+        const yearVal = (typeof jQuery !== 'undefined' && $('#year_select').length)
+            ? $('#year_select').val()
+            : (yearSelect ? yearSelect.value : null);
+        const filterYear = (yearVal === 'all' || !yearVal) ? '' : yearVal;
 
         const issueVal = (typeof jQuery !== 'undefined' && $('#issue_select').val())
             ? $('#issue_select').val()
@@ -1265,6 +1717,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         let url = '{{ route("back.dashboard.journal.submissions") }}?type=' + encodeURIComponent(type);
         if (journalId) url += '&journal_id=' + encodeURIComponent(journalId);
+        if (filterYear) url += '&year=' + encodeURIComponent(filterYear);
         if (issueId) url += '&issue_id=' + encodeURIComponent(issueId);
 
         fetch(url, {
@@ -1273,20 +1726,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(res => {
-            if (!res.ok) throw new Error('Status ' + res.status);
+        .then(async res => {
+            if (!res.ok) {
+                let errorMsg = 'Gagal memuat data submission (Status ' + res.status + ')';
+                try {
+                    const errData = await res.json();
+                    if (errData && (errData.message || errData.error)) {
+                        errorMsg = errData.message || errData.error;
+                    }
+                } catch (e) {}
+                throw new Error(errorMsg);
+            }
             return res.json();
         })
         .then(data => {
             document.getElementById('modal_submission_loading').classList.add('d-none');
             if (!data.success) {
-                throw new Error(data.message || 'Gagal memuat data');
+                throw new Error(data.message || data.error || 'Gagal memuat data');
             }
 
             const meta = data.meta || {};
             const journalName = meta.journal ? meta.journal.name : '-';
-            const issueText = meta.issue ? meta.issue.label : 'Semua Issue';
-            document.getElementById('modal_submission_subtitle').textContent = journalName + ' • ' + issueText;
+            let subtitleParts = [journalName];
+            if (meta.year) subtitleParts.push('Tahun ' + meta.year);
+            if (meta.issue) {
+                subtitleParts.push(meta.issue.label);
+            } else if (!meta.year) {
+                subtitleParts.push('Semua Issue');
+            }
+            document.getElementById('modal_submission_subtitle').textContent = subtitleParts.join(' • ');
 
             document.getElementById('modal_summary_count').textContent = (meta.total_count || 0) + ' Naskah';
             document.getElementById('modal_summary_fee').textContent = formatRupiah(meta.total_fee || 0);
@@ -1357,13 +1825,18 @@ document.addEventListener('DOMContentLoaded', function () {
         ? $('#journal_select').val()
         : (journalSelect ? journalSelect.value : null);
 
+    const initialYearVal = (typeof jQuery !== 'undefined' && $('#year_select').val())
+        ? $('#year_select').val()
+        : (yearSelect ? yearSelect.value : null);
+    const initialYear = (initialYearVal === 'all' || !initialYearVal) ? '' : initialYearVal;
+
     const initialIssueVal = (typeof jQuery !== 'undefined' && $('#issue_select').val())
         ? $('#issue_select').val()
         : (issueSelect ? issueSelect.value : null);
     const initialIssueId = (initialIssueVal === 'all' || !initialIssueVal) ? '' : initialIssueVal;
 
     if (initialJournalId) {
-        loadJournalStats(initialJournalId, initialIssueId, false);
+        loadJournalStats(initialJournalId, initialIssueId, initialYear, false);
     }
 });
 </script>
