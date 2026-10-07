@@ -44,6 +44,12 @@ use ZipArchive;
 
 class journalController extends Controller
 {
+     protected array $allowedMaxArticleRoles = [
+        'super-admin',
+        'admin-ejournal',
+        'admin-proceeding',
+        'admin-student-research-hub',
+    ];
 
     public function index($journal_path)
     {
