@@ -89,7 +89,7 @@
 
                             <p style="line-height:1.7; margin:26px 0 0;">
                                 Sincerely,<br>
-                                <strong>Rumah Jurnal System</strong>
+                                <strong>Makwa Foundation System</strong>
                             </p>
                         </td>
                     </tr>

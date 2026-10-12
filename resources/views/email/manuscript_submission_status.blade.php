@@ -27,7 +27,7 @@
                     <tr>
                         <td style="border-bottom:1px solid #e4e7ec;padding:28px 36px;">
                             <p style="color:#c3a356;font-size:12px;font-weight:700;letter-spacing:.1em;margin:0 0 8px;text-transform:uppercase;">
-                                Rumah Jurnal
+                                Makwa Foundation
                             </p>
                             <h1 style="color:#15365f;font-size:24px;line-height:1.3;margin:0;">
                                 Manuscript Submission Update
@@ -136,7 +136,7 @@
                                 </p>
                             @endif
                             <p style="line-height:1.7;margin:26px 0 0;">
-                                Sincerely,<br><strong>Rumah Jurnal Editorial Team</strong>
+                                Sincerely,<br><strong>Makwa Foundation Editorial Team</strong>
                             </p>
                         </td>
                     </tr>
