@@ -273,7 +273,7 @@
     @endhasrole
     <!--end::Modal Delete Article-->
 
-    {{-- @include('back.pages.journal.modal-sync-payments') --}}
+    @include('back.pages.journal.modal-sync-payments')
 @endsection
 @section('scripts')
     <script>
