@@ -81,29 +81,39 @@ class JournalController extends Controller
         $submission = null;
         $author = null;
         $isValid = false;
+        $hasSearched = !empty($submissionId);
 
-        if ($submissionId && $authorId) {
-            $submission = \App\Models\Submission::with('issue.journal')->find($submissionId);
+        if ($submissionId) {
+            $submission = \App\Models\Submission::with('issue.journal')
+                ->where('id', $submissionId)
+                ->orWhere('submission_id', $submissionId)
+                ->first();
 
             if ($submission) {
-                $authors = $submission->authors;
-                foreach ($authors as $auth) {
-                    if (isset($auth['id']) && $auth['id'] == $authorId) {
-                        $author = $auth;
-                        $isValid = true;
-                        break;
+                $authors = $submission->authors ?? [];
+
+                if ($authorId) {
+                    foreach ($authors as $auth) {
+                        if (isset($auth['id']) && (string) $auth['id'] === (string) $authorId) {
+                            $author = $auth;
+                            $isValid = true;
+                            break;
+                        }
                     }
+                } else {
+                    $isValid = true;
+                    $author = !empty($authors) ? $authors[0] : null;
                 }
             }
         }
 
         $data = [
-            'title' => 'Validasi Letter of Acceptance (LoA) | ' . $setting_web->name,
+            'title' => 'Validasi Letter of Acceptance (LoA) | ' . ($setting_web->name ?? 'Makwa Foundation'),
             'meta' => [
-                'title' => 'Validasi Letter of Acceptance (LoA) | ' . $setting_web->name,
-                'description' => 'Verifikasi keaslian Letter of Acceptance (LoA) dari Rumah Jurnal.',
-                'keywords' => $setting_web->name . ', Validasi LoA, Letter of Acceptance, Verification, Authenticity',
-                'favicon' => $setting_web->favicon
+                'title' => 'Validasi Letter of Acceptance (LoA) | ' . ($setting_web->name ?? 'Makwa Foundation'),
+                'description' => 'Verifikasi keaslian Letter of Acceptance (LoA) dari ' . ($setting_web->name ?? 'Makwa Foundation'),
+                'keywords' => ($setting_web->name ?? 'Makwa Foundation') . ', Validasi LoA, Letter of Acceptance, Verification, Authenticity',
+                'favicon' => $setting_web?->favicon
             ],
             'breadcrumbs' => [
                 [
@@ -118,7 +128,9 @@ class JournalController extends Controller
             'setting_web' => $setting_web,
             'submission' => $submission,
             'author' => $author,
-            'isValid' => $isValid
+            'isValid' => $isValid,
+            'hasSearched' => $hasSearched,
+            'searchedSubmissionId' => $submissionId,
         ];
 
         return view('front.pages.journal.loa_validate', $data);

@@ -30,6 +30,9 @@ use App\Models\WaitingSubmission;
 use App\Services\WhatsappService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use chillerlan\QRCode\QRCode;
+use chillerlan\QRCode\QROptions;
+use chillerlan\QRCode\Output\QRGdImagePNG;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -1075,7 +1078,7 @@ class journalController extends Controller
     }
 
 
-     public function loaGenerate($submission)
+    public function loaGenerate($submission)
     {
         $submission = Submission::find($submission);
         if (!$submission) {
@@ -1090,33 +1093,24 @@ class journalController extends Controller
         }
 
         $validationUrl = route('loa.validate', [
-            'submission_id' => $submission->id,
+            'submission_id' => $submission->submission_id ?? $submission->id,
         ]);
 
-        $qrCodeBase64 = null;
-        try {
-            $qrCodeApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($validationUrl);
-            $qrCodeResponse = Http::timeout(10)->get($qrCodeApiUrl);
-            if ($qrCodeResponse->successful()) {
-                $qrCodeBase64 = 'data:image/png;base64,' . base64_encode($qrCodeResponse->body());
-            }
-        } catch (\Throwable $th) {
-            Log::error('Failed to generate QR Code for LoA validation: ' . $th->getMessage());
-        }
+        $qrCodeBase64 = $this->generateLoaQrCode($validationUrl);
 
         $data = [
             'number' => $submission->number ?? "0000",
             'submission_id' => $submission->submission_id,
-            'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
-            'month' => Carbon::now()->format('m'),
+            'year' => $submission->created_at ? $submission->created_at->format('Y') : Carbon::now()->format('Y'),
+            'month' => $submission->created_at ? $submission->created_at->format('m') : Carbon::now()->format('m'),
             'authors' => $submission->authors,
             'title' => $submission->fullTitle,
             'journal' => $issue->journal->title,
-            'edition' => 'Vol. ' . $issue->volume . ' No. ' . $issue->number . ' Edition ' . $issue->year,
+            'edition' => 'Vol. ' . $issue->volume . ' No. ' . $issue->number . ' Tahun ' . $issue->year,
             'date' => \Carbon\Carbon::now()->translatedFormat('d F Y'),
-            'journal_thumbnail' => 'data:image/png;base64,' . base64_encode(file_get_contents($issue->journal->getJournalThumbnail())),
+            'journal_thumbnail' => $this->getJournalThumbnailBase64($issue->journal),
             'chief_editor' => $issue->journal->editor_chief_name,
-            'chief_editor_signature' => $issue->journal->editor_chief_signature ? 'data:image/png;base64,' . base64_encode(file_get_contents(storage_path('app/public/' . $issue->journal->editor_chief_signature))) : null,
+            'chief_editor_signature' => $this->getJournalSignatureBase64($issue->journal),
             'qr_code' => $qrCodeBase64,
         ];
 
@@ -1147,33 +1141,24 @@ class journalController extends Controller
         }
 
         $validationUrl = route('loa.validate', [
-            'submission_id' => $submission->id,
+            'submission_id' => $submission->submission_id ?? $submission->id,
         ]);
 
-        $qrCodeBase64 = null;
-        try {
-            $qrCodeApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($validationUrl);
-            $qrCodeResponse = Http::timeout(10)->get($qrCodeApiUrl);
-            if ($qrCodeResponse->successful()) {
-                $qrCodeBase64 = 'data:image/png;base64,' . base64_encode($qrCodeResponse->body());
-            }
-        } catch (\Throwable $th) {
-            Log::error('Failed to generate QR Code for LoA validation: ' . $th->getMessage());
-        }
+        $qrCodeBase64 = $this->generateLoaQrCode($validationUrl);
 
         $pdfData = [
             'number' => $submission->number ?? "0000",
             'submission_id' => $submission->submission_id,
-            'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
-            'month' => Carbon::now()->format('m'),
+            'year' => $submission->created_at ? $submission->created_at->format('Y') : Carbon::now()->format('Y'),
+            'month' => $submission->created_at ? $submission->created_at->format('m') : Carbon::now()->format('m'),
             'authors' => $submission->authors,
             'title' => $submission->fullTitle,
             'journal' => $issue->journal->title,
             'edition' => 'Vol. ' . $issue->volume . ' No. ' . $issue->number . ' Tahun ' . $issue->year,
             'date' => \Carbon\Carbon::now()->translatedFormat('d F Y'),
-            'journal_thumbnail' => 'data:image/png;base64,' . base64_encode(file_get_contents($issue->journal->getJournalThumbnail())),
+            'journal_thumbnail' => $this->getJournalThumbnailBase64($issue->journal),
             'chief_editor' => $issue->journal->editor_chief_name,
-            'chief_editor_signature' => $issue->journal->editor_chief_signature ? 'data:image/png;base64,' . base64_encode(file_get_contents(storage_path('app/public/' . $issue->journal->editor_chief_signature))) : null,
+            'chief_editor_signature' => $this->getJournalSignatureBase64($issue->journal),
             'qr_code' => $qrCodeBase64,
         ];
 
@@ -1195,7 +1180,7 @@ class journalController extends Controller
                 $data = [
                     'subject' => 'Letter of Acceptance (LoA) for ' . $author['name'],
                     'number' => $submission->number ?? "0000",
-                    'year' => $submission->created_at->format('Y') ?? Carbon::now()->format('Y'),
+                    'year' => $submission->created_at ? $submission->created_at->format('Y') : Carbon::now()->format('Y'),
                     'name' => $author['name'],
                     'email' => $author['email'],
                     'affiliation' => $author['affiliation'] ?? '',
@@ -1219,6 +1204,63 @@ class journalController extends Controller
 
         Alert::success('Success', 'Email has been sent');
         return redirect()->back();
+    }
+
+    private function generateLoaQrCode(string $url): ?string
+    {
+        // 1. Prioritaskan generator lokal chillerlan/php-qrcode (cepat, offline, tidak butuh koneksi luar)
+        try {
+            $options = new QROptions([
+                'outputInterface' => QRGdImagePNG::class,
+                'scale' => 5,
+            ]);
+            return (new QRCode($options))->render($url);
+        } catch (\Throwable $e) {
+            Log::warning('Local QR code generation failed, attempting external API fallback: ' . $e->getMessage());
+        }
+
+        // 2. Fallback ke API eksternal jika lokal ada kendala
+        try {
+            $qrCodeApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' . urlencode($url);
+            $qrCodeResponse = Http::timeout(5)->get($qrCodeApiUrl);
+            if ($qrCodeResponse->successful()) {
+                return 'data:image/png;base64,' . base64_encode($qrCodeResponse->body());
+            }
+        } catch (\Throwable $th) {
+            Log::error('External QR code generation failed: ' . $th->getMessage());
+        }
+
+        return null;
+    }
+
+    private function getJournalSignatureBase64($journal): ?string
+    {
+        if (!empty($journal->editor_chief_signature)) {
+            $sigPath = storage_path('app/public/' . $journal->editor_chief_signature);
+            if (file_exists($sigPath)) {
+                $content = @file_get_contents($sigPath);
+                if ($content !== false) {
+                    return 'data:image/png;base64,' . base64_encode($content);
+                }
+            }
+        }
+        return null;
+    }
+
+    private function getJournalThumbnailBase64($journal): ?string
+    {
+        try {
+            $thumbUrl = $journal->getJournalThumbnail();
+            if ($thumbUrl) {
+                $content = @file_get_contents($thumbUrl);
+                if ($content !== false) {
+                    return 'data:image/png;base64,' . base64_encode($content);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Failed to load journal thumbnail for LoA: ' . $e->getMessage());
+        }
+        return null;
     }
 
     private function generateInvoicePdf(Submission $submission, PaymentInvoice $invoice, Issue $issue): string
@@ -3123,7 +3165,7 @@ class journalController extends Controller
                     'apiToken' => $jurnal->api_key
                 ]);
                 if ($response2->status() === 200) {
-                    $path = 'arsip/loa/' . 'LoA-' . $submission->submission_id . '-' . $submission->id . '-' . $submission->authors[0]['id'] . '.pdf';
+                    $path = 'arsip/loa/' . 'LoA-' . $submission->submission_id . '.pdf';
                     $data2 = $response2->json();
 
                     $whatsappService = new WhatsappService();
@@ -3139,10 +3181,19 @@ class journalController extends Controller
                             asset('storage/' . $path) . "\n\n" .
                             "Terimakasih atas kontribusi Anda terhadap kemajuan ilmu pengetahuan melalui publikasi di jurnal kami.\n\n" .
                             "Salam,\n" .
-                            "Editorial Rumah Jurnal\n\n" .
+                            "Editorial Makwa Foundation\n\n" .
                             "_generate by system_\n" .
                             url('/')
                     );
+
+                    if (Storage::disk('public')->exists($path)) {
+                        $whatsappService->sendDocument(
+                            whatsappNumber($data2["phone"]),
+                            asset('storage/' . $path),
+                            'LoA-' . $submission->submission_id . '.pdf',
+                            'application/pdf'
+                        );
+                    }
 
                     // $response_wa = Http::post(env('WHATSAPP_API_URL')  . "/send-message", [
                     //     'session' => env('WHATSAPP_API_SESSION'),
