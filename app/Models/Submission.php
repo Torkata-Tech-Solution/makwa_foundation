@@ -31,6 +31,16 @@ class Submission extends Model
         return $this->belongsTo(Issue::class, 'issue_id');
     }
 
+    public function setAuthorNikAttribute($value)
+    {
+        // Mutator to avoid column not found if author_nik is passed
+    }
+
+    public function getAuthorNikAttribute()
+    {
+        return $this->attributes['author_nik'] ?? null;
+    }
+
     public function paymentInvoices()
     {
         return $this->hasMany(PaymentInvoice::class, 'submission_id');

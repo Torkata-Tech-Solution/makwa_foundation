@@ -85,6 +85,113 @@ class journalController extends Controller
         return view('back.pages.journal.index', $data);
     }
 
+    /**
+     * Cari penulis dan submission di semua edisi (issue) dalam suatu jurnal.
+     *
+     * @param Request $request
+     * @param string $journal_path
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function searchAuthor(Request $request, $journal_path)
+    {
+        // 1. Temukan jurnal dan validasi izin akses user
+        $journal = Journal::where('url_path', $journal_path)->firstOrFail();
+        abort_unless(auth()->user() && auth()->user()->can($journal->url_path), 403);
+
+        // 2. Ambil parameter pencarian dan filter
+        $keyword = trim((string) $request->input('q', $request->input('search', '')));
+        $searchBy = $request->input('search_by', 'all'); // 'all', 'author', 'submission_id'
+        $issueId = $request->input('issue_id', $request->input('filter_issue'));
+
+        $filterSubmissionId = trim((string) $request->input('filter_submission_id', $request->input('submission_id', '')));
+        $filterAuthor = trim((string) $request->input('filter_author', $request->input('author', '')));
+        $filterTitle = trim((string) $request->input('filter_title', $request->input('title', '')));
+
+        // 3. Bangun query artikel yang terikat pada jurnal ini
+        $submissionsQuery = Submission::whereHas('issue', function ($q) use ($journal, $issueId) {
+            $q->where('journal_id', $journal->id);
+            if (!empty($issueId) && $issueId !== 'all') {
+                $q->where('id', $issueId);
+            }
+        })->with([
+            'issue' => function ($q) {
+                $q->select('id', 'journal_id', 'volume', 'number', 'year', 'title', 'status', 'author_fee');
+            },
+            'paymentInvoices.payments'
+        ]);
+
+        // 4. Filter spesifik parameter terpisah (jika dikirim)
+        if (!empty($filterSubmissionId)) {
+            $submissionsQuery->where('submission_id', 'like', "%{$filterSubmissionId}%");
+        }
+
+        if (!empty($filterAuthor)) {
+            $submissionsQuery->where('authorsString', 'like', "%{$filterAuthor}%");
+        }
+
+        if (!empty($filterTitle)) {
+            $submissionsQuery->where('fullTitle', 'like', "%{$filterTitle}%");
+        }
+
+        // 5. Filter berdasarkan keyword global & search_by (dropdown)
+        if (!empty($keyword)) {
+            $submissionsQuery->where(function ($query) use ($keyword, $searchBy) {
+                if ($searchBy === 'submission_id') {
+                    $query->where('submission_id', 'like', "%{$keyword}%");
+                } elseif ($searchBy === 'author') {
+                    // Strictly hanya mencari pada authorsString
+                    $query->where('authorsString', 'like', "%{$keyword}%");
+                } else {
+                    $query->where('submission_id', 'like', "%{$keyword}%")
+                        ->orWhere('authorsString', 'like', "%{$keyword}%");
+                }
+            });
+        }
+
+        // 6. Urutkan dari naskah terbaru dan batasi 50 data untuk performa
+        $submissions = $submissionsQuery->orderBy('id', 'desc')->limit(50)->get();
+
+        // 7. Format data output untuk frontend
+        $results = $submissions->map(function ($sub) use ($journal) {
+            $issue = $sub->issue;
+            $issueTitle = $issue 
+                ? "Vol. {$issue->volume} No. {$issue->number} ({$issue->year}): {$issue->title}" 
+                : '-';
+            $issueUrl = $issue 
+                ? route('back.journal.article.index', [$journal->url_path, $issue->id]) 
+                : '#';
+            $modalViewUrl = $issue 
+                ? route('back.journal.article.modal-view', [$journal->url_path, $issue->id, $sub->id]) 
+                : '#';
+
+            $fullTitle = is_array($sub->fullTitle) 
+                ? implode(', ', $sub->fullTitle) 
+                : ($sub->fullTitle ?: 'Tanpa Judul');
+
+            return [
+                'id' => $sub->id,
+                'submission_id' => $sub->submission_id,
+                'title' => (string) $fullTitle,
+                'authors_string' => $sub->authorsString ?: '-',
+                'status' => $sub->status,
+                'status_label' => $sub->status_label ?? ($sub->status == 3 ? 'Published' : 'Queued'),
+                'payment_status' => $sub->payment_status ?: 'pending',
+                'date_published' => $sub->datePublished,
+                'url_published' => $sub->urlPublished,
+                'issue_id' => $sub->issue_id,
+                'issue_title' => $issueTitle,
+                'issue_url' => $issueUrl,
+                'modal_view_url' => $modalViewUrl,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'count' => $results->count(),
+            'data' => $results,
+        ]);
+    }
+
     public function issueStore(Request $request, $journal_path)
     {
         $validator = Validator::make($request->all(), [
